@@ -33,7 +33,7 @@ export function ChangeUserPasswordModal({ isOpen, onClose, user }: ChangeUserPas
   });
 
   const changePasswordMutation = useMutation({
-    mutationFn: async (data: UpdateUserPasswordRequest) => {
+    mutationFn: async (data: UpdateUserPasswordRequest & { confirmPassword: string }) => {
       const res = await apiRequest("POST", `/api/users/${user.id}/password`, data);
       return res.json();
     },
@@ -56,9 +56,9 @@ export function ChangeUserPasswordModal({ isOpen, onClose, user }: ChangeUserPas
   });
 
   const onSubmit = (data: UpdateUserPasswordRequest & { confirmPassword: string }) => {
-    const { confirmPassword, ...passwordData } = data;
     changePasswordMutation.mutate({
-      ...passwordData,
+      newPassword: data.newPassword,
+      confirmPassword: data.confirmPassword,
       userId: user.id
     });
   };

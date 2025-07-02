@@ -233,8 +233,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Admin access required" });
       }
 
+      console.log("Received user data:", req.body);
       const result = createUserSchema.safeParse(req.body);
       if (!result.success) {
+        console.log("Validation errors:", result.error.errors);
         return res.status(400).json({ 
           message: "Validation failed", 
           errors: result.error.errors 

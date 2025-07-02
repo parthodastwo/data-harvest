@@ -43,7 +43,8 @@ export function CreateUserModal({ isOpen, onClose }: CreateUserModalProps) {
   });
 
   const createUserMutation = useMutation({
-    mutationFn: async (data: CreateUserRequest) => {
+    mutationFn: async (data: CreateUserRequest & { confirmPassword: string }) => {
+      console.log("Sending user data:", data);
       const res = await apiRequest("POST", "/api/users", data);
       return res.json();
     },
@@ -66,8 +67,8 @@ export function CreateUserModal({ isOpen, onClose }: CreateUserModalProps) {
   });
 
   const onSubmit = (data: CreateUserRequest & { confirmPassword: string }) => {
-    const { confirmPassword, ...createUserData } = data;
-    createUserMutation.mutate(createUserData);
+    // Keep confirmPassword for backend validation
+    createUserMutation.mutate(data);
   };
 
   const selectedRole = watch("role");
