@@ -67,6 +67,22 @@ export const changePasswordSchema = z.object({
   path: ["confirmPassword"],
 });
 
+export const createUserSchema = insertUserSchema.extend({
+  confirmPassword: z.string(),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ["confirmPassword"],
+});
+
+export const updateUserPasswordSchema = z.object({
+  userId: z.number(),
+  newPassword: z.string().min(8, "Password must be at least 8 characters"),
+  confirmPassword: z.string(),
+}).refine((data) => data.newPassword === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ["confirmPassword"],
+});
+
 export const insertDataExtractionSchema = createInsertSchema(dataExtractions).omit({
   id: true,
   createdAt: true,
@@ -83,6 +99,8 @@ export type User = typeof users.$inferSelect;
 export type LoginRequest = z.infer<typeof loginSchema>;
 export type RegisterRequest = z.infer<typeof registerSchema>;
 export type ChangePasswordRequest = z.infer<typeof changePasswordSchema>;
+export type CreateUserRequest = z.infer<typeof createUserSchema>;
+export type UpdateUserPasswordRequest = z.infer<typeof updateUserPasswordSchema>;
 export type InsertDataExtraction = z.infer<typeof insertDataExtractionSchema>;
 export type DataExtraction = typeof dataExtractions.$inferSelect;
 export type InsertExtractionConfiguration = z.infer<typeof insertExtractionConfigurationSchema>;

@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import { loginSchema, registerSchema, changePasswordSchema, insertDataExtractionSchema, insertExtractionConfigurationSchema, type User } from "@shared/schema";
+import { loginSchema, registerSchema, changePasswordSchema, createUserSchema, updateUserPasswordSchema, insertDataExtractionSchema, insertExtractionConfigurationSchema, type User } from "@shared/schema";
 import { z } from "zod";
 
 const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
@@ -199,6 +199,110 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Validation error", errors: error.errors });
       }
       console.error("Create configuration error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // User management routes (admin only)
+  app.get("/api/users", authenticateToken, async (req: any, res) => {
+    try {
+      const currentUser = await storage.getUser(req.user.id);
+      if (!currentUser || currentUser.role !== "admin") {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+      
+      const users = await storage.getAllUsers();
+      // Remove password from response
+      const safeUsers = users.map(({ password, ...user }) => user);
+      res.json(safeUsers);
+    } catch (error) {
+      console.error("Get users error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.post("/api/users", authenticateToken, async (req: any, res) => {
+    try {
+      const currentUser = await storage.getUser(req.user.id);
+      if (!currentUser || currentUser.role !== "admin") {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      const result = createUserSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ 
+          message: "Validation failed", 
+          errors: result.error.errors 
+        });
+      }
+
+      const { confirmPassword, ...userData } = result.data;
+      const hashedPassword = await bcrypt.hash(userData.password, 10);
+      
+      const user = await storage.createUser({
+        ...userData,
+        password: hashedPassword,
+      });
+
+      const { password: _, ...safeUser } = user;
+      res.status(201).json(safeUser);
+    } catch (error: any) {
+      if (error.code === "23505") {
+        return res.status(400).json({ message: "Username or email already exists" });
+      }
+      console.error("Create user error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.put("/api/users/:id/password", authenticateToken, async (req: any, res) => {
+    try {
+      const currentUser = await storage.getUser(req.user.id);
+      if (!currentUser || currentUser.role !== "admin") {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      const result = updateUserPasswordSchema.safeParse({
+        userId: parseInt(req.params.id),
+        ...req.body
+      });
+      
+      if (!result.success) {
+        return res.status(400).json({ 
+          message: "Validation failed", 
+          errors: result.error.errors 
+        });
+      }
+
+      const { userId, newPassword } = result.data;
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
+      
+      await storage.updateUserPasswordById(userId, hashedPassword);
+      res.json({ message: "Password updated successfully" });
+    } catch (error) {
+      console.error("Update user password error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.put("/api/users/:id/status", authenticateToken, async (req: any, res) => {
+    try {
+      const currentUser = await storage.getUser(req.user.id);
+      if (!currentUser || currentUser.role !== "admin") {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      const userId = parseInt(req.params.id);
+      const { isActive } = req.body;
+      
+      if (typeof isActive !== "boolean") {
+        return res.status(400).json({ message: "isActive must be a boolean" });
+      }
+
+      await storage.updateUserStatus(userId, isActive);
+      res.json({ message: "User status updated successfully" });
+    } catch (error) {
+      console.error("Update user status error:", error);
       res.status(500).json({ message: "Internal server error" });
     }
   });

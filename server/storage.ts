@@ -10,6 +10,11 @@ export interface IStorage {
   createUser(user: InsertUser): Promise<User>;
   updateUserPassword(id: number, hashedPassword: string): Promise<void>;
   
+  // User management methods
+  getAllUsers(): Promise<User[]>;
+  updateUserPasswordById(userId: number, hashedPassword: string): Promise<void>;
+  updateUserStatus(userId: number, isActive: boolean): Promise<void>;
+  
   // Data extraction methods
   getDataExtractions(userId: number): Promise<DataExtraction[]>;
   getDataExtraction(id: number): Promise<DataExtraction | undefined>;
@@ -50,6 +55,24 @@ export class DatabaseStorage implements IStorage {
       .update(users)
       .set({ password: hashedPassword, updatedAt: new Date() })
       .where(eq(users.id, id));
+  }
+
+  async getAllUsers(): Promise<User[]> {
+    return await db.select().from(users).orderBy(desc(users.createdAt));
+  }
+
+  async updateUserPasswordById(userId: number, hashedPassword: string): Promise<void> {
+    await db
+      .update(users)
+      .set({ password: hashedPassword, updatedAt: new Date() })
+      .where(eq(users.id, userId));
+  }
+
+  async updateUserStatus(userId: number, isActive: boolean): Promise<void> {
+    await db
+      .update(users)
+      .set({ isActive, updatedAt: new Date() })
+      .where(eq(users.id, userId));
   }
 
   async getDataExtractions(userId: number): Promise<DataExtraction[]> {

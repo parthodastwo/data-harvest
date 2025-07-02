@@ -2,20 +2,22 @@ import { useState } from "react";
 import { Heart, BarChart3, Database, Settings, History, Users, Menu, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
+import { useLocation } from "wouter";
 import { PasswordChangeModal } from "@/components/auth/password-change-modal";
 
 export function Sidebar() {
   const { user, logout } = useAuth();
+  const [location, setLocation] = useLocation();
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   const menuItems = [
-    { icon: BarChart3, label: "Dashboard", active: true },
-    { icon: Database, label: "Data Extractions" },
-    { icon: Settings, label: "Configurations" },
-    { icon: BarChart3, label: "Reports & Analytics" },
-    { icon: History, label: "Extraction History" },
-    { icon: Users, label: "User Management" },
+    { icon: BarChart3, label: "Dashboard", path: "/dashboard" },
+    { icon: Database, label: "Data Extractions", path: "/extractions" },
+    { icon: Settings, label: "Configurations", path: "/configurations" },
+    { icon: BarChart3, label: "Reports & Analytics", path: "/reports" },
+    { icon: History, label: "Extraction History", path: "/history" },
+    { icon: Users, label: "User Management", path: "/users", adminOnly: true },
   ];
 
   const getUserInitials = () => {
@@ -52,11 +54,12 @@ export function Sidebar() {
 
         <nav className="p-4">
           <ul className="space-y-2">
-            {menuItems.map((item, index) => (
+            {menuItems.filter(item => !item.adminOnly || user?.role === "admin").map((item, index) => (
               <li key={index}>
                 <button
+                  onClick={() => setLocation(item.path)}
                   className={`flex items-center w-full px-4 py-3 rounded-lg font-medium transition-colors ${
-                    item.active
+                    location === item.path
                       ? "text-blue-600 bg-blue-50"
                       : "text-gray-600 hover:text-blue-600 hover:bg-blue-50"
                   } ${isCollapsed ? 'justify-center' : ''}`}
