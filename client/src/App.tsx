@@ -8,6 +8,8 @@ import Login from "@/pages/login";
 import Register from "@/pages/register";
 import Dashboard from "@/pages/dashboard";
 import UserManagement from "@/pages/user-management";
+import DataSystems from "@/pages/data-systems";
+import DataSources from "@/pages/data-sources";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -18,6 +20,8 @@ function Router() {
       <Route path="/register" component={Register} />
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/users" component={UserManagement} />
+      <Route path="/data-systems" component={DataSystems} />
+      <Route path="/data-systems/:systemId/sources" component={DataSources} />
       <Route component={NotFound} />
     </Switch>
   );

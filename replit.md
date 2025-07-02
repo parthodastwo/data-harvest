@@ -105,6 +105,7 @@ This is a full-stack healthcare data extraction platform built with React/TypeSc
 Changelog:
 - July 02, 2025. Initial setup
 - July 02, 2025. Added user management functionality with admin role controls for creating users, changing passwords, and managing user status
+- July 02, 2025. Added Data Systems and Data Sources management with full CRUD operations, admin-only access, and hierarchical navigation
 
 ## User Preferences
 

@@ -40,6 +40,28 @@ export const extractionConfigurations = pgTable("extraction_configurations", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+export const dataSystems = pgTable("data_systems", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description"),
+  activeFlag: boolean("active_flag").default(true).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const dataSources = pgTable("data_sources", {
+  id: serial("id").primaryKey(),
+  dataSystemId: integer("data_system_id").references(() => dataSystems.id).notNull(),
+  name: text("name").notNull(),
+  filename: text("filename").notNull(),
+  description: text("description"),
+  activeFlag: boolean("active_flag").default(true).notNull(),
+  isMaster: boolean("is_master").default(false).notNull(),
+  attributes: text("attributes").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
   createdAt: true,
@@ -94,6 +116,18 @@ export const insertExtractionConfigurationSchema = createInsertSchema(extraction
   createdAt: true,
 });
 
+export const insertDataSystemSchema = createInsertSchema(dataSystems).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertDataSourceSchema = createInsertSchema(dataSources).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type LoginRequest = z.infer<typeof loginSchema>;
@@ -105,3 +139,7 @@ export type InsertDataExtraction = z.infer<typeof insertDataExtractionSchema>;
 export type DataExtraction = typeof dataExtractions.$inferSelect;
 export type InsertExtractionConfiguration = z.infer<typeof insertExtractionConfigurationSchema>;
 export type ExtractionConfiguration = typeof extractionConfigurations.$inferSelect;
+export type InsertDataSystem = z.infer<typeof insertDataSystemSchema>;
+export type DataSystem = typeof dataSystems.$inferSelect;
+export type InsertDataSource = z.infer<typeof insertDataSourceSchema>;
+export type DataSource = typeof dataSources.$inferSelect;

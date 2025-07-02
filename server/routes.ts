@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import { loginSchema, registerSchema, changePasswordSchema, createUserSchema, updateUserPasswordSchema, insertDataExtractionSchema, insertExtractionConfigurationSchema, type User } from "@shared/schema";
+import { loginSchema, registerSchema, changePasswordSchema, createUserSchema, updateUserPasswordSchema, insertDataExtractionSchema, insertExtractionConfigurationSchema, insertDataSystemSchema, insertDataSourceSchema, type User } from "@shared/schema";
 import { z } from "zod";
 
 // Extend Express Request interface to include user
@@ -310,6 +310,187 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ message: "User status updated successfully" });
     } catch (error) {
       console.error("Update user status error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Data Systems API routes
+  app.get("/api/data-systems", authenticateToken, async (req: any, res) => {
+    try {
+      const dataSystems = await storage.getAllDataSystems();
+      res.json(dataSystems);
+    } catch (error) {
+      console.error("Get data systems error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.get("/api/data-systems/:id", authenticateToken, async (req: any, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const dataSystem = await storage.getDataSystem(id);
+      
+      if (!dataSystem) {
+        return res.status(404).json({ message: "Data system not found" });
+      }
+      
+      res.json(dataSystem);
+    } catch (error) {
+      console.error("Get data system error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.post("/api/data-systems", authenticateToken, async (req: any, res) => {
+    try {
+      const currentUser = await storage.getUser(req.user.id);
+      if (!currentUser || currentUser.role !== "admin") {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      const result = insertDataSystemSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ 
+          message: "Validation failed", 
+          errors: result.error.errors 
+        });
+      }
+
+      const dataSystem = await storage.createDataSystem(result.data);
+      res.status(201).json(dataSystem);
+    } catch (error) {
+      console.error("Create data system error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.put("/api/data-systems/:id", authenticateToken, async (req: any, res) => {
+    try {
+      const currentUser = await storage.getUser(req.user.id);
+      if (!currentUser || currentUser.role !== "admin") {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      const id = parseInt(req.params.id);
+      const result = insertDataSystemSchema.partial().safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ 
+          message: "Validation failed", 
+          errors: result.error.errors 
+        });
+      }
+
+      const dataSystem = await storage.updateDataSystem(id, result.data);
+      res.json(dataSystem);
+    } catch (error) {
+      console.error("Update data system error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.delete("/api/data-systems/:id", authenticateToken, async (req: any, res) => {
+    try {
+      const currentUser = await storage.getUser(req.user.id);
+      if (!currentUser || currentUser.role !== "admin") {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      const id = parseInt(req.params.id);
+      await storage.deleteDataSystem(id);
+      res.json({ message: "Data system deleted successfully" });
+    } catch (error) {
+      console.error("Delete data system error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Data Sources API routes
+  app.get("/api/data-systems/:systemId/data-sources", authenticateToken, async (req: any, res) => {
+    try {
+      const systemId = parseInt(req.params.systemId);
+      const dataSources = await storage.getDataSourcesBySystem(systemId);
+      res.json(dataSources);
+    } catch (error) {
+      console.error("Get data sources error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.get("/api/data-sources/:id", authenticateToken, async (req: any, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const dataSource = await storage.getDataSource(id);
+      
+      if (!dataSource) {
+        return res.status(404).json({ message: "Data source not found" });
+      }
+      
+      res.json(dataSource);
+    } catch (error) {
+      console.error("Get data source error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.post("/api/data-sources", authenticateToken, async (req: any, res) => {
+    try {
+      const currentUser = await storage.getUser(req.user.id);
+      if (!currentUser || currentUser.role !== "admin") {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      const result = insertDataSourceSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ 
+          message: "Validation failed", 
+          errors: result.error.errors 
+        });
+      }
+
+      const dataSource = await storage.createDataSource(result.data);
+      res.status(201).json(dataSource);
+    } catch (error) {
+      console.error("Create data source error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.put("/api/data-sources/:id", authenticateToken, async (req: any, res) => {
+    try {
+      const currentUser = await storage.getUser(req.user.id);
+      if (!currentUser || currentUser.role !== "admin") {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      const id = parseInt(req.params.id);
+      const result = insertDataSourceSchema.partial().safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ 
+          message: "Validation failed", 
+          errors: result.error.errors 
+        });
+      }
+
+      const dataSource = await storage.updateDataSource(id, result.data);
+      res.json(dataSource);
+    } catch (error) {
+      console.error("Update data source error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.delete("/api/data-sources/:id", authenticateToken, async (req: any, res) => {
+    try {
+      const currentUser = await storage.getUser(req.user.id);
+      if (!currentUser || currentUser.role !== "admin") {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      const id = parseInt(req.params.id);
+      await storage.deleteDataSource(id);
+      res.json({ message: "Data source deleted successfully" });
+    } catch (error) {
+      console.error("Delete data source error:", error);
       res.status(500).json({ message: "Internal server error" });
     }
   });

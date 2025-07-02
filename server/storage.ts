@@ -1,4 +1,4 @@
-import { users, dataExtractions, extractionConfigurations, type User, type InsertUser, type DataExtraction, type InsertDataExtraction, type ExtractionConfiguration, type InsertExtractionConfiguration } from "@shared/schema";
+import { users, dataExtractions, extractionConfigurations, dataSystems, dataSources, type User, type InsertUser, type DataExtraction, type InsertDataExtraction, type ExtractionConfiguration, type InsertExtractionConfiguration, type DataSystem, type InsertDataSystem, type DataSource, type InsertDataSource } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc } from "drizzle-orm";
 
@@ -24,6 +24,20 @@ export interface IStorage {
   // Configuration methods
   getExtractionConfigurations(userId: number): Promise<ExtractionConfiguration[]>;
   createExtractionConfiguration(config: InsertExtractionConfiguration): Promise<ExtractionConfiguration>;
+  
+  // Data System methods
+  getAllDataSystems(): Promise<DataSystem[]>;
+  getDataSystem(id: number): Promise<DataSystem | undefined>;
+  createDataSystem(dataSystem: InsertDataSystem): Promise<DataSystem>;
+  updateDataSystem(id: number, dataSystem: Partial<InsertDataSystem>): Promise<DataSystem>;
+  deleteDataSystem(id: number): Promise<void>;
+  
+  // Data Source methods
+  getDataSourcesBySystem(dataSystemId: number): Promise<DataSource[]>;
+  getDataSource(id: number): Promise<DataSource | undefined>;
+  createDataSource(dataSource: InsertDataSource): Promise<DataSource>;
+  updateDataSource(id: number, dataSource: Partial<InsertDataSource>): Promise<DataSource>;
+  deleteDataSource(id: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -126,6 +140,68 @@ export class DatabaseStorage implements IStorage {
       .values(config)
       .returning();
     return newConfig;
+  }
+
+  // Data System methods
+  async getAllDataSystems(): Promise<DataSystem[]> {
+    return await db.select().from(dataSystems).orderBy(desc(dataSystems.createdAt));
+  }
+
+  async getDataSystem(id: number): Promise<DataSystem | undefined> {
+    const [dataSystem] = await db.select().from(dataSystems).where(eq(dataSystems.id, id));
+    return dataSystem || undefined;
+  }
+
+  async createDataSystem(dataSystem: InsertDataSystem): Promise<DataSystem> {
+    const [newDataSystem] = await db
+      .insert(dataSystems)
+      .values(dataSystem)
+      .returning();
+    return newDataSystem;
+  }
+
+  async updateDataSystem(id: number, dataSystem: Partial<InsertDataSystem>): Promise<DataSystem> {
+    const [updatedDataSystem] = await db
+      .update(dataSystems)
+      .set({ ...dataSystem, updatedAt: new Date() })
+      .where(eq(dataSystems.id, id))
+      .returning();
+    return updatedDataSystem;
+  }
+
+  async deleteDataSystem(id: number): Promise<void> {
+    await db.delete(dataSystems).where(eq(dataSystems.id, id));
+  }
+
+  // Data Source methods
+  async getDataSourcesBySystem(dataSystemId: number): Promise<DataSource[]> {
+    return await db.select().from(dataSources).where(eq(dataSources.dataSystemId, dataSystemId)).orderBy(desc(dataSources.createdAt));
+  }
+
+  async getDataSource(id: number): Promise<DataSource | undefined> {
+    const [dataSource] = await db.select().from(dataSources).where(eq(dataSources.id, id));
+    return dataSource || undefined;
+  }
+
+  async createDataSource(dataSource: InsertDataSource): Promise<DataSource> {
+    const [newDataSource] = await db
+      .insert(dataSources)
+      .values(dataSource)
+      .returning();
+    return newDataSource;
+  }
+
+  async updateDataSource(id: number, dataSource: Partial<InsertDataSource>): Promise<DataSource> {
+    const [updatedDataSource] = await db
+      .update(dataSources)
+      .set({ ...dataSource, updatedAt: new Date() })
+      .where(eq(dataSources.id, id))
+      .returning();
+    return updatedDataSource;
+  }
+
+  async deleteDataSource(id: number): Promise<void> {
+    await db.delete(dataSources).where(eq(dataSources.id, id));
   }
 }
 
