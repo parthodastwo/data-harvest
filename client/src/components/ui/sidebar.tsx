@@ -14,6 +14,7 @@ export function Sidebar() {
   const menuItems = [
     { icon: BarChart3, label: "Dashboard", path: "/dashboard" },
     { icon: Database, label: "Data Systems", path: "/data-systems" },
+    { icon: Database, label: "Data Sources", path: "/data-sources" },
     { icon: Database, label: "Data Extractions", path: "/extractions" },
     { icon: Settings, label: "Configurations", path: "/configurations" },
     { icon: BarChart3, label: "Reports & Analytics", path: "/reports" },

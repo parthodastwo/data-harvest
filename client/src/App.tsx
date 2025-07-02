@@ -3,7 +3,8 @@ import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { AuthProvider } from "@/hooks/use-auth";
+import { AuthProvider, useAuth } from "@/hooks/use-auth";
+import { MainLayout } from "@/components/layout/main-layout";
 import Login from "@/pages/login";
 import Register from "@/pages/register";
 import Dashboard from "@/pages/dashboard";
@@ -12,16 +13,46 @@ import DataSystems from "@/pages/data-systems";
 import DataSources from "@/pages/data-sources";
 import NotFound from "@/pages/not-found";
 
+function AuthenticatedRoute({ component: Component, ...props }: any) {
+  const { isAuthenticated, isLoading } = useAuth();
+  
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+  
+  if (!isAuthenticated) {
+    return <Login />;
+  }
+  
+  return (
+    <MainLayout>
+      <Component {...props} />
+    </MainLayout>
+  );
+}
+
 function Router() {
   return (
     <Switch>
       <Route path="/" component={Login} />
       <Route path="/login" component={Login} />
       <Route path="/register" component={Register} />
-      <Route path="/dashboard" component={Dashboard} />
-      <Route path="/users" component={UserManagement} />
-      <Route path="/data-systems" component={DataSystems} />
-      <Route path="/data-systems/:systemId/sources" component={DataSources} />
+      <Route path="/dashboard">
+        {(params) => <AuthenticatedRoute component={Dashboard} {...params} />}
+      </Route>
+      <Route path="/users">
+        {(params) => <AuthenticatedRoute component={UserManagement} {...params} />}
+      </Route>
+      <Route path="/data-systems">
+        {(params) => <AuthenticatedRoute component={DataSystems} {...params} />}
+      </Route>
+      <Route path="/data-sources">
+        {(params) => <AuthenticatedRoute component={DataSources} {...params} />}
+      </Route>
       <Route component={NotFound} />
     </Switch>
   );

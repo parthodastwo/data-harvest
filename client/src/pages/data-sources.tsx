@@ -5,10 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Edit, Trash2, File, ArrowLeft, Database } from "lucide-react";
-import { useLocation, useRoute } from "wouter";
+import { Plus, Edit, Trash2, File, Database } from "lucide-react";
 import { DataSource, DataSystem, InsertDataSource } from "@shared/schema";
 
 interface CreateDataSourceModalProps {
@@ -184,24 +184,22 @@ function CreateDataSourceModal({ isOpen, onClose, dataSystemId, editingSource }:
 }
 
 export default function DataSources() {
-  const [, setLocation] = useLocation();
-  const [, params] = useRoute("/data-systems/:systemId/sources");
-  const dataSystemId = parseInt(params?.systemId || "0");
-  
+  const [selectedSystemId, setSelectedSystemId] = useState<number | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editingSource, setEditingSource] = useState<DataSource | null>(null);
   const [deletingSource, setDeletingSource] = useState<DataSource | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const { toast } = useToast();
 
-  const { data: dataSystem } = useQuery<DataSystem>({
-    queryKey: ["/api/data-systems", dataSystemId],
-    enabled: !!dataSystemId,
+  // Fetch all data systems for the dropdown
+  const { data: dataSystems } = useQuery<DataSystem[]>({
+    queryKey: ["/api/data-systems"],
   });
 
+  // Fetch data sources for the selected system
   const { data: dataSources, isLoading, error } = useQuery<DataSource[]>({
-    queryKey: ["/api/data-systems", dataSystemId, "data-sources"],
-    enabled: !!dataSystemId,
+    queryKey: ["/api/data-systems", selectedSystemId, "data-sources"],
+    enabled: !!selectedSystemId,
   });
 
   const deleteMutation = useMutation({
@@ -210,7 +208,7 @@ export default function DataSources() {
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/data-systems", dataSystemId, "data-sources"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/data-systems", selectedSystemId, "data-sources"] });
       toast({
         title: "Data Source Deleted",
         description: "Data source deleted successfully",
@@ -247,15 +245,7 @@ export default function DataSources() {
     }
   };
 
-  if (!dataSystemId) {
-    return (
-      <div className="p-6">
-        <div className="text-center text-red-600">
-          Invalid data system ID
-        </div>
-      </div>
-    );
-  }
+  const selectedSystem = dataSystems?.find(system => system.id === selectedSystemId);
 
   if (isLoading) {
     return (
@@ -285,48 +275,68 @@ export default function DataSources() {
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setLocation("/data-systems")}
-            className="flex items-center space-x-2"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            <span>Back to Data Systems</span>
-          </Button>
-          <div>
-            <div className="flex items-center space-x-2 mb-2">
-              <Database className="h-6 w-6 text-blue-600" />
-              <h1 className="text-3xl font-bold text-gray-900">
-                {dataSystem?.name || "Data Sources"}
-              </h1>
-            </div>
-            <p className="text-gray-600">
-              Manage data sources for {dataSystem?.name || "this system"}
-            </p>
+        <div>
+          <div className="flex items-center space-x-2 mb-2">
+            <File className="h-6 w-6 text-green-600" />
+            <h1 className="text-3xl font-bold text-gray-900">Data Sources</h1>
           </div>
+          <p className="text-gray-600">
+            Manage data sources for healthcare systems
+          </p>
         </div>
-        <Button onClick={() => setIsCreateModalOpen(true)} className="flex items-center space-x-2">
+        <Button 
+          onClick={() => setIsCreateModalOpen(true)} 
+          className="flex items-center space-x-2"
+          disabled={!selectedSystemId}
+        >
           <Plus className="h-4 w-4" />
           <span>Add Data Source</span>
         </Button>
       </div>
 
       <div className="flex items-center space-x-4">
-        <Input
-          placeholder="Search data sources..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="max-w-sm"
-        />
-        <Badge variant="secondary">
-          {filteredSources.length} source{filteredSources.length !== 1 ? 's' : ''}
-        </Badge>
+        <div className="flex items-center space-x-2">
+          <label className="text-sm font-medium text-gray-700">Data System:</label>
+          <Select value={selectedSystemId?.toString() || ""} onValueChange={(value) => setSelectedSystemId(parseInt(value))}>
+            <SelectTrigger className="w-[300px]">
+              <SelectValue placeholder="Select a data system" />
+            </SelectTrigger>
+            <SelectContent>
+              {dataSystems?.map((system) => (
+                <SelectItem key={system.id} value={system.id.toString()}>
+                  {system.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        
+        {selectedSystemId && (
+          <>
+            <Input
+              placeholder="Search data sources..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="max-w-sm"
+            />
+            <Badge variant="secondary">
+              {filteredSources.length} source{filteredSources.length !== 1 ? 's' : ''}
+            </Badge>
+          </>
+        )}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredSources.map((source: DataSource) => {
+      {!selectedSystemId ? (
+        <div className="text-center py-12">
+          <Database className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 mb-2">Select a Data System</h3>
+          <p className="text-gray-600">
+            Choose a data system from the dropdown above to view and manage its data sources.
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredSources.map((source: DataSource) => {
           const attributesList = typeof source.attributes === 'string' 
             ? source.attributes.split(',').map(attr => attr.trim()).filter(attr => attr.length > 0)
             : Array.isArray(source.attributes) 
@@ -408,9 +418,10 @@ export default function DataSources() {
             </Card>
           );
         })}
-      </div>
+        </div>
+      )}
 
-      {filteredSources.length === 0 && (
+      {selectedSystemId && filteredSources.length === 0 && (
         <div className="text-center py-12">
           <File className="h-12 w-12 text-gray-400 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-gray-900 mb-2">No data sources found</h3>
@@ -432,7 +443,7 @@ export default function DataSources() {
           setIsCreateModalOpen(false);
           setEditingSource(null);
         }}
-        dataSystemId={dataSystemId}
+        dataSystemId={selectedSystemId || 0}
         editingSource={editingSource}
       />
 

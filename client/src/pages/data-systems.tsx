@@ -185,9 +185,7 @@ export default function DataSystems() {
     }
   };
 
-  const handleViewSources = (system: DataSystem) => {
-    setLocation(`/data-systems/${system.id}/sources`);
-  };
+
 
   if (isLoading) {
     return (
@@ -217,20 +215,9 @@ export default function DataSystems() {
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setLocation("/dashboard")}
-            className="flex items-center space-x-2"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            <span>Back to Dashboard</span>
-          </Button>
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Data Systems</h1>
-            <p className="text-gray-600">Manage healthcare data systems and their sources</p>
-          </div>
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Data Systems</h1>
+          <p className="text-gray-600">Manage healthcare data systems and their sources</p>
         </div>
         <Button onClick={() => setIsCreateModalOpen(true)} className="flex items-center space-x-2">
           <Plus className="h-4 w-4" />
@@ -275,14 +262,6 @@ export default function DataSystems() {
                   Created: {new Date(system.createdAt).toLocaleDateString()}
                 </div>
                 <div className="flex items-center space-x-1">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleViewSources(system)}
-                    className="h-8 w-8 p-0"
-                  >
-                    <Database className="h-4 w-4" />
-                  </Button>
                   <Button
                     variant="ghost"
                     size="sm"
