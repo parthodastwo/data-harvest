@@ -43,9 +43,15 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
+    // Trim role to prevent whitespace issues
+    const cleanUser = {
+      ...insertUser,
+      role: insertUser.role?.trim() || 'user'
+    };
+    
     const [user] = await db
       .insert(users)
-      .values(insertUser)
+      .values(cleanUser)
       .returning();
     return user;
   }
