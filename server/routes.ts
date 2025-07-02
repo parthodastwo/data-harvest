@@ -6,6 +6,11 @@ import jwt from "jsonwebtoken";
 import { loginSchema, registerSchema, changePasswordSchema, createUserSchema, updateUserPasswordSchema, insertDataExtractionSchema, insertExtractionConfigurationSchema, type User } from "@shared/schema";
 import { z } from "zod";
 
+// Extend Express Request interface to include user
+interface AuthenticatedRequest extends Request {
+  user: User;
+}
+
 const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
 const SALT_ROUNDS = 10;
 
@@ -113,7 +118,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/auth/change-password", authenticateToken, async (req, res) => {
+  app.post("/api/auth/change-password", authenticateToken, async (req: any, res) => {
     try {
       const validatedData = changePasswordSchema.parse(req.body);
       const user = req.user;
@@ -140,13 +145,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/auth/me", authenticateToken, async (req, res) => {
+  app.get("/api/auth/me", authenticateToken, async (req: any, res) => {
     const { password: _, ...userWithoutPassword } = req.user;
     res.json(userWithoutPassword);
   });
 
   // Data extraction routes
-  app.get("/api/extractions", authenticateToken, async (req, res) => {
+  app.get("/api/extractions", authenticateToken, async (req: any, res) => {
     try {
       const extractions = await storage.getDataExtractions(req.user.id);
       res.json(extractions);
@@ -156,7 +161,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/extractions", authenticateToken, async (req, res) => {
+  app.post("/api/extractions", authenticateToken, async (req: any, res) => {
     try {
       const validatedData = insertDataExtractionSchema.parse({
         ...req.body,
@@ -175,7 +180,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Configuration routes
-  app.get("/api/configurations", authenticateToken, async (req, res) => {
+  app.get("/api/configurations", authenticateToken, async (req: any, res) => {
     try {
       const configurations = await storage.getExtractionConfigurations(req.user.id);
       res.json(configurations);
@@ -185,7 +190,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/configurations", authenticateToken, async (req, res) => {
+  app.post("/api/configurations", authenticateToken, async (req: any, res) => {
     try {
       const validatedData = insertExtractionConfigurationSchema.parse({
         ...req.body,

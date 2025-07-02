@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Edit, Shield, ShieldCheck, Trash2 } from "lucide-react";
+import { Plus, Edit, Shield, ShieldCheck, Trash2, ArrowLeft } from "lucide-react";
+import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -14,11 +15,12 @@ import type { User } from "@shared/schema";
 export default function UserManagement() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [, setLocation] = useLocation();
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [passwordModalOpen, setPasswordModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
 
-  const { data: users, isLoading } = useQuery({
+  const { data: users = [], isLoading } = useQuery<User[]>({
     queryKey: ["/api/users"],
   });
 
@@ -62,8 +64,6 @@ export default function UserManagement() {
     switch (role) {
       case "admin":
         return "destructive";
-      case "manager":
-        return "default";
       default:
         return "secondary";
     }
@@ -85,9 +85,19 @@ export default function UserManagement() {
   return (
     <div className="container mx-auto py-6 space-y-6">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">User Management</h1>
-          <p className="text-gray-600">Manage system users and their permissions</p>
+        <div className="flex items-center gap-4">
+          <Button
+            variant="outline"
+            onClick={() => setLocation('/dashboard')}
+            className="flex items-center gap-2"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to Dashboard
+          </Button>
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">User Management</h1>
+            <p className="text-gray-600">Manage system users and their permissions</p>
+          </div>
         </div>
         <Button onClick={() => setCreateModalOpen(true)} className="flex items-center gap-2">
           <Plus className="h-4 w-4" />

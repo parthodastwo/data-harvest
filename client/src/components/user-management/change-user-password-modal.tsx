@@ -1,15 +1,14 @@
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { X, Key } from "lucide-react";
+import { z } from "zod";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { updateUserPasswordSchema, type UpdateUserPasswordRequest, type User } from "@shared/schema";
+import type { UpdateUserPasswordRequest, User } from "@shared/schema";
 
 interface ChangeUserPasswordModalProps {
   isOpen: boolean;
@@ -17,144 +16,103 @@ interface ChangeUserPasswordModalProps {
   user: User;
 }
 
+const updateUserPasswordSchema = z.object({
+  newPassword: z.string().min(6, "Password must be at least 6 characters"),
+  confirmPassword: z.string().min(6, "Password must be at least 6 characters"),
+}).refine((data) => data.newPassword === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ["confirmPassword"],
+});
+
 export function ChangeUserPasswordModal({ isOpen, onClose, user }: ChangeUserPasswordModalProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const form = useForm<UpdateUserPasswordRequest>({
+  const { register, handleSubmit, formState: { errors }, reset } = useForm<UpdateUserPasswordRequest & { confirmPassword: string }>({
     resolver: zodResolver(updateUserPasswordSchema),
-    defaultValues: {
-      userId: user.id,
-      newPassword: "",
-      confirmPassword: "",
-    },
   });
 
   const changePasswordMutation = useMutation({
     mutationFn: async (data: UpdateUserPasswordRequest) => {
-      return apiRequest("PUT", `/api/users/${data.userId}/password`, {
-        newPassword: data.newPassword,
-        confirmPassword: data.confirmPassword,
-      });
+      const res = await apiRequest("POST", `/api/users/${user.id}/password`, data);
+      return res.json();
     },
     onSuccess: () => {
       toast({
-        title: "Password updated",
-        description: `Password for ${user.firstName} ${user.lastName} has been successfully changed.`,
+        title: "Success",
+        description: "Password updated successfully",
       });
-      form.reset();
+      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+      reset();
       onClose();
     },
     onError: (error: any) => {
       toast({
         title: "Error",
-        description: error.message || "Failed to change password",
+        description: error.message || "Failed to update password",
         variant: "destructive",
       });
     },
   });
 
-  const onSubmit = (data: UpdateUserPasswordRequest) => {
-    changePasswordMutation.mutate(data);
-  };
-
-  const handleClose = () => {
-    form.reset();
-    onClose();
-  };
-
-  const getUserInitials = () => {
-    return `${user.firstName.charAt(0)}${user.lastName.charAt(0)}`.toUpperCase();
+  const onSubmit = (data: UpdateUserPasswordRequest & { confirmPassword: string }) => {
+    const { confirmPassword, ...passwordData } = data;
+    changePasswordMutation.mutate({
+      ...passwordData,
+      userId: user.id
+    });
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader className="flex flex-row items-center justify-between space-y-0">
-          <div>
-            <DialogTitle className="flex items-center gap-2">
-              <Key className="h-5 w-5" />
-              Change User Password
-            </DialogTitle>
-            <DialogDescription>
-              Update the password for this user account.
-            </DialogDescription>
-          </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleClose}
-            className="h-6 w-6 p-0"
-          >
-            <X className="h-4 w-4" />
-          </Button>
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle>Change Password for {user.firstName} {user.lastName}</DialogTitle>
         </DialogHeader>
-
-        <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg">
-          <Avatar>
-            <AvatarFallback className="bg-blue-100 text-blue-600">
-              {getUserInitials()}
-            </AvatarFallback>
-          </Avatar>
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div>
-            <p className="font-semibold">{user.firstName} {user.lastName}</p>
-            <p className="text-sm text-gray-600">@{user.username}</p>
-            <p className="text-sm text-gray-500">{user.email}</p>
+            <Label htmlFor="newPassword">New Password</Label>
+            <Input
+              id="newPassword"
+              type="password"
+              {...register("newPassword")}
+              placeholder="Enter new password"
+            />
+            {errors.newPassword && (
+              <p className="text-sm text-red-600">{errors.newPassword.message}</p>
+            )}
           </div>
-        </div>
 
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="newPassword"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>New Password</FormLabel>
-                  <FormControl>
-                    <Input 
-                      type="password" 
-                      placeholder="Enter new password"
-                      {...field} 
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+          <div>
+            <Label htmlFor="confirmPassword">Confirm Password</Label>
+            <Input
+              id="confirmPassword"
+              type="password"
+              {...register("confirmPassword")}
+              placeholder="Confirm new password"
             />
+            {errors.confirmPassword && (
+              <p className="text-sm text-red-600">{errors.confirmPassword.message}</p>
+            )}
+          </div>
 
-            <FormField
-              control={form.control}
-              name="confirmPassword"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Confirm New Password</FormLabel>
-                  <FormControl>
-                    <Input 
-                      type="password" 
-                      placeholder="Confirm new password"
-                      {...field} 
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <div className="flex justify-end gap-2 pt-4">
-              <Button type="button" variant="outline" onClick={handleClose}>
-                Cancel
-              </Button>
-              <Button 
-                type="submit" 
-                disabled={changePasswordMutation.isPending}
-                className="min-w-[120px]"
-              >
-                {changePasswordMutation.isPending ? "Updating..." : "Update Password"}
-              </Button>
-            </div>
-          </form>
-        </Form>
+          <div className="flex justify-end space-x-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              disabled={changePasswordMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              disabled={changePasswordMutation.isPending}
+            >
+              {changePasswordMutation.isPending ? "Updating..." : "Update Password"}
+            </Button>
+          </div>
+        </form>
       </DialogContent>
     </Dialog>
   );
