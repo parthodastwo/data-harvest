@@ -21,17 +21,21 @@ const createUserSchema = z.object({
   username: z.string().min(3, "Username must be at least 3 characters"),
   email: z.string().email("Invalid email address"),
   password: z.string().min(6, "Password must be at least 6 characters"),
+  confirmPassword: z.string().min(6, "Password must be at least 6 characters"),
   firstName: z.string().min(1, "First name is required"),
   lastName: z.string().min(1, "Last name is required"),
   organization: z.string().optional(),
   role: z.enum(["user", "admin"]),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ["confirmPassword"],
 });
 
 export function CreateUserModal({ isOpen, onClose }: CreateUserModalProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { register, handleSubmit, formState: { errors }, setValue, watch, reset } = useForm<CreateUserRequest>({
+  const { register, handleSubmit, formState: { errors }, setValue, watch, reset } = useForm<CreateUserRequest & { confirmPassword: string }>({
     resolver: zodResolver(createUserSchema),
     defaultValues: {
       role: "user",
@@ -61,8 +65,9 @@ export function CreateUserModal({ isOpen, onClose }: CreateUserModalProps) {
     },
   });
 
-  const onSubmit = (data: CreateUserRequest) => {
-    createUserMutation.mutate(data);
+  const onSubmit = (data: CreateUserRequest & { confirmPassword: string }) => {
+    const { confirmPassword, ...createUserData } = data;
+    createUserMutation.mutate(createUserData);
   };
 
   const selectedRole = watch("role");
@@ -143,6 +148,19 @@ export function CreateUserModal({ isOpen, onClose }: CreateUserModalProps) {
             />
             {errors.password && (
               <p className="text-sm text-red-600">{errors.password.message}</p>
+            )}
+          </div>
+
+          <div>
+            <Label htmlFor="confirmPassword">Confirm Password</Label>
+            <Input
+              id="confirmPassword"
+              type="password"
+              {...register("confirmPassword")}
+              placeholder="Confirm password"
+            />
+            {errors.confirmPassword && (
+              <p className="text-sm text-red-600">{errors.confirmPassword.message}</p>
             )}
           </div>
 
