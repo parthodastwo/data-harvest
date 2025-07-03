@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -41,6 +41,23 @@ function CreateCrossReferenceModal({ isOpen, onClose, editingCrossReference }: C
     queryKey: ["/api/data-systems"],
     enabled: isOpen,
   });
+
+  // Reset form when editing cross-reference changes
+  useEffect(() => {
+    if (editingCrossReference) {
+      form.reset({
+        name: editingCrossReference.name,
+        dataSystemId: editingCrossReference.dataSystemId,
+        isActive: editingCrossReference.isActive,
+      });
+    } else {
+      form.reset({
+        name: "",
+        dataSystemId: 0,
+        isActive: true,
+      });
+    }
+  }, [editingCrossReference, form]);
 
   const createMutation = useMutation({
     mutationFn: async (data: InsertCrossReference) => {

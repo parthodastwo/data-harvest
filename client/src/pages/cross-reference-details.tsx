@@ -43,43 +43,43 @@ function CreateMappingModal({ isOpen, onClose, crossReferenceId, editingMapping 
     },
   });
 
-  const { data: crossReference } = useQuery({
+  const { data: crossReference } = useQuery<CrossReference>({
     queryKey: ["/api/cross-references", crossReferenceId],
     enabled: isOpen,
   });
 
-  const { data: allDataSources } = useQuery({
+  const { data: allDataSources } = useQuery<DataSource[]>({
     queryKey: ["/api/data-sources"],
     enabled: isOpen,
   });
 
-  const { data: sourceDataSources } = useQuery({
+  const { data: sourceDataSources } = useQuery<DataSource[]>({
     queryKey: ["/api/data-systems", crossReference?.dataSystemId, "data-sources"],
     queryFn: async () => {
       if (!crossReference?.dataSystemId) return [];
-      const response = await apiRequest(`/api/data-systems/${crossReference.dataSystemId}/data-sources`);
+      const response = await apiRequest("GET", `/api/data-systems/${crossReference.dataSystemId}/data-sources`);
       return response.json();
     },
     enabled: isOpen && !!crossReference?.dataSystemId,
   });
 
-  const { data: sourceAttributes } = useQuery({
+  const { data: sourceAttributes } = useQuery<DataSourceAttribute[]>({
     queryKey: ["/api/data-sources", form.watch("sourceDataSourceId"), "attributes"],
     queryFn: async () => {
       const sourceId = form.watch("sourceDataSourceId");
       if (!sourceId) return [];
-      const response = await apiRequest(`/api/data-sources/${sourceId}/attributes`);
+      const response = await apiRequest("GET", `/api/data-sources/${sourceId}/attributes`);
       return response.json();
     },
     enabled: isOpen && !!form.watch("sourceDataSourceId"),
   });
 
-  const { data: targetAttributes } = useQuery({
+  const { data: targetAttributes } = useQuery<DataSourceAttribute[]>({
     queryKey: ["/api/data-sources", form.watch("targetDataSourceId"), "attributes"],
     queryFn: async () => {
       const targetId = form.watch("targetDataSourceId");
       if (!targetId) return [];
-      const response = await apiRequest(`/api/data-sources/${targetId}/attributes`);
+      const response = await apiRequest("GET", `/api/data-sources/${targetId}/attributes`);
       return response.json();
     },
     enabled: isOpen && !!form.watch("targetDataSourceId"),
@@ -87,10 +87,7 @@ function CreateMappingModal({ isOpen, onClose, crossReferenceId, editingMapping 
 
   const createMutation = useMutation({
     mutationFn: async (data: z.infer<typeof createMappingSchema>) => {
-      const response = await apiRequest(`/api/cross-references/${crossReferenceId}/mappings`, {
-        method: "POST",
-        body: JSON.stringify(data),
-      });
+      const response = await apiRequest("POST", `/api/cross-references/${crossReferenceId}/mappings`, data);
       return response.json();
     },
     onSuccess: () => {
@@ -106,10 +103,7 @@ function CreateMappingModal({ isOpen, onClose, crossReferenceId, editingMapping 
 
   const updateMutation = useMutation({
     mutationFn: async (data: z.infer<typeof createMappingSchema>) => {
-      const response = await apiRequest(`/api/cross-references/${crossReferenceId}/mappings/${editingMapping!.id}`, {
-        method: "PUT",
-        body: JSON.stringify(data),
-      });
+      const response = await apiRequest("PUT", `/api/cross-references/${crossReferenceId}/mappings/${editingMapping!.id}`, data);
       return response.json();
     },
     onSuccess: () => {
@@ -280,27 +274,27 @@ export default function CrossReferenceDetails() {
   // Extract cross reference ID from URL
   const crossReferenceId = parseInt(location.split("/").pop() || "0");
 
-  const { data: crossReference, isLoading: crossReferenceLoading } = useQuery({
+  const { data: crossReference, isLoading: crossReferenceLoading } = useQuery<CrossReference>({
     queryKey: ["/api/cross-references", crossReferenceId],
     enabled: !!crossReferenceId,
   });
 
-  const { data: mappings, isLoading: mappingsLoading } = useQuery({
+  const { data: mappings, isLoading: mappingsLoading } = useQuery<CrossReferenceMapping[]>({
     queryKey: ["/api/cross-references", crossReferenceId, "mappings"],
     enabled: !!crossReferenceId,
   });
 
-  const { data: allDataSources } = useQuery({
+  const { data: allDataSources } = useQuery<DataSource[]>({
     queryKey: ["/api/data-sources"],
   });
 
-  const { data: allAttributes } = useQuery({
+  const { data: allAttributes } = useQuery<DataSourceAttribute[]>({
     queryKey: ["/api/data-source-attributes"],
     queryFn: async () => {
       if (!allDataSources) return [];
       const allAttrs = [];
       for (const ds of allDataSources) {
-        const response = await apiRequest(`/api/data-sources/${ds.id}/attributes`);
+        const response = await apiRequest("GET", `/api/data-sources/${ds.id}/attributes`);
         const attrs = await response.json();
         allAttrs.push(...attrs);
       }
@@ -311,9 +305,7 @@ export default function CrossReferenceDetails() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
-      await apiRequest(`/api/cross-references/${crossReferenceId}/mappings/${id}`, {
-        method: "DELETE",
-      });
+      await apiRequest("DELETE", `/api/cross-references/${crossReferenceId}/mappings/${id}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/cross-references", crossReferenceId, "mappings"] });
@@ -388,20 +380,26 @@ export default function CrossReferenceDetails() {
         {/* Master: Cross Reference Information */}
         <Card>
           <CardContent className="py-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-sm font-medium text-muted-foreground">Name</label>
-                <p className="text-lg font-semibold mt-1">{crossReference.name}</p>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-muted-foreground">Status</label>
-                <div className="mt-1">
-                  <Badge variant={crossReference.isActive ? "default" : "secondary"}>
-                    {crossReference.isActive ? "Active" : "Inactive"}
-                  </Badge>
+            {crossReference ? (
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Name</label>
+                  <p className="text-lg font-semibold mt-1">{crossReference.name}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Status</label>
+                  <div className="mt-1">
+                    <Badge variant={crossReference.isActive ? "default" : "secondary"}>
+                      {crossReference.isActive ? "Active" : "Inactive"}
+                    </Badge>
+                  </div>
                 </div>
               </div>
-            </div>
+            ) : (
+              <div className="text-center py-4">
+                <p className="text-muted-foreground">Loading cross reference details...</p>
+              </div>
+            )}
           </CardContent>
         </Card>
 
