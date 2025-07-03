@@ -16,10 +16,7 @@ export function Sidebar() {
     { icon: Database, label: "Data Systems", path: "/data-systems" },
     { icon: Database, label: "Data Sources", path: "/data-sources" },
     { icon: Database, label: "Cross References", path: "/cross-references" },
-    { icon: Database, label: "Data Extractions", path: "/extractions" },
     { icon: Settings, label: "Configurations", path: "/configurations" },
-    { icon: BarChart3, label: "Reports & Analytics", path: "/reports" },
-    { icon: History, label: "Extraction History", path: "/history" },
     { icon: Users, label: "User Management", path: "/users", adminOnly: true },
   ];
 
