@@ -1,4 +1,4 @@
-import { users, dataExtractions, extractionConfigurations, dataSystems, dataSources, dataSourceAttributes, type User, type InsertUser, type DataExtraction, type InsertDataExtraction, type ExtractionConfiguration, type InsertExtractionConfiguration, type DataSystem, type InsertDataSystem, type DataSource, type InsertDataSource, type DataSourceAttribute, type InsertDataSourceAttribute } from "@shared/schema";
+import { users, dataExtractions, extractionConfigurations, dataSystems, dataSources, dataSourceAttributes, crossReferences, crossReferenceMappings, type User, type InsertUser, type DataExtraction, type InsertDataExtraction, type ExtractionConfiguration, type InsertExtractionConfiguration, type DataSystem, type InsertDataSystem, type DataSource, type InsertDataSource, type DataSourceAttribute, type InsertDataSourceAttribute, type CrossReference, type InsertCrossReference, type CrossReferenceMapping, type InsertCrossReferenceMapping } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc } from "drizzle-orm";
 
@@ -46,6 +46,20 @@ export interface IStorage {
   createDataSourceAttribute(attribute: InsertDataSourceAttribute): Promise<DataSourceAttribute>;
   updateDataSourceAttribute(id: number, attribute: Partial<InsertDataSourceAttribute>): Promise<DataSourceAttribute>;
   deleteDataSourceAttribute(id: number): Promise<void>;
+  
+  // Cross Reference methods
+  getAllCrossReferences(): Promise<CrossReference[]>;
+  getCrossReference(id: number): Promise<CrossReference | undefined>;
+  createCrossReference(crossReference: InsertCrossReference): Promise<CrossReference>;
+  updateCrossReference(id: number, crossReference: Partial<InsertCrossReference>): Promise<CrossReference>;
+  deleteCrossReference(id: number): Promise<void>;
+  
+  // Cross Reference Mapping methods
+  getCrossReferenceMappings(crossReferenceId: number): Promise<CrossReferenceMapping[]>;
+  getCrossReferenceMapping(id: number): Promise<CrossReferenceMapping | undefined>;
+  createCrossReferenceMapping(mapping: InsertCrossReferenceMapping): Promise<CrossReferenceMapping>;
+  updateCrossReferenceMapping(id: number, mapping: Partial<InsertCrossReferenceMapping>): Promise<CrossReferenceMapping>;
+  deleteCrossReferenceMapping(id: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -245,6 +259,68 @@ export class DatabaseStorage implements IStorage {
 
   async deleteDataSourceAttribute(id: number): Promise<void> {
     await db.delete(dataSourceAttributes).where(eq(dataSourceAttributes.id, id));
+  }
+
+  // Cross Reference methods
+  async getAllCrossReferences(): Promise<CrossReference[]> {
+    return await db.select().from(crossReferences).orderBy(desc(crossReferences.createdAt));
+  }
+
+  async getCrossReference(id: number): Promise<CrossReference | undefined> {
+    const [crossReference] = await db.select().from(crossReferences).where(eq(crossReferences.id, id));
+    return crossReference || undefined;
+  }
+
+  async createCrossReference(crossReference: InsertCrossReference): Promise<CrossReference> {
+    const [newCrossReference] = await db
+      .insert(crossReferences)
+      .values(crossReference)
+      .returning();
+    return newCrossReference;
+  }
+
+  async updateCrossReference(id: number, crossReference: Partial<InsertCrossReference>): Promise<CrossReference> {
+    const [updatedCrossReference] = await db
+      .update(crossReferences)
+      .set({ ...crossReference, updatedAt: new Date() })
+      .where(eq(crossReferences.id, id))
+      .returning();
+    return updatedCrossReference;
+  }
+
+  async deleteCrossReference(id: number): Promise<void> {
+    await db.delete(crossReferences).where(eq(crossReferences.id, id));
+  }
+
+  // Cross Reference Mapping methods
+  async getCrossReferenceMappings(crossReferenceId: number): Promise<CrossReferenceMapping[]> {
+    return await db.select().from(crossReferenceMappings).where(eq(crossReferenceMappings.crossReferenceId, crossReferenceId));
+  }
+
+  async getCrossReferenceMapping(id: number): Promise<CrossReferenceMapping | undefined> {
+    const [mapping] = await db.select().from(crossReferenceMappings).where(eq(crossReferenceMappings.id, id));
+    return mapping || undefined;
+  }
+
+  async createCrossReferenceMapping(mapping: InsertCrossReferenceMapping): Promise<CrossReferenceMapping> {
+    const [newMapping] = await db
+      .insert(crossReferenceMappings)
+      .values(mapping)
+      .returning();
+    return newMapping;
+  }
+
+  async updateCrossReferenceMapping(id: number, mapping: Partial<InsertCrossReferenceMapping>): Promise<CrossReferenceMapping> {
+    const [updatedMapping] = await db
+      .update(crossReferenceMappings)
+      .set({ ...mapping, updatedAt: new Date() })
+      .where(eq(crossReferenceMappings.id, id))
+      .returning();
+    return updatedMapping;
+  }
+
+  async deleteCrossReferenceMapping(id: number): Promise<void> {
+    await db.delete(crossReferenceMappings).where(eq(crossReferenceMappings.id, id));
   }
 }
 

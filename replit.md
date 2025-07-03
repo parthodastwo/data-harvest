@@ -117,6 +117,9 @@ Changelog:
 - July 03, 2025. Fixed scrolling layout in data source details - header stays visible, attributes section scrolls independently
 - July 03, 2025. Updated attributes display to show "Reference" instead of "Standard" for non-master data sources
 - July 03, 2025. Improved attributes section spacing and made scrollbar always visible
+- July 03, 2025. Added Cross References feature with full CRUD operations for managing attribute mappings between data sources
+- July 03, 2025. Implemented Cross Reference details page with master-details layout and mapping management functionality
+- July 03, 2025. Added validation to prevent mapping source and target data sources to the same data source
 
 ## User Preferences
 

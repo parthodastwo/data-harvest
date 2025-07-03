@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import { loginSchema, registerSchema, changePasswordSchema, createUserSchema, updateUserPasswordSchema, insertDataExtractionSchema, insertExtractionConfigurationSchema, insertDataSystemSchema, insertDataSourceSchema, insertDataSourceAttributeSchema, type User } from "@shared/schema";
+import { loginSchema, registerSchema, changePasswordSchema, createUserSchema, updateUserPasswordSchema, insertDataExtractionSchema, insertExtractionConfigurationSchema, insertDataSystemSchema, insertDataSourceSchema, insertDataSourceAttributeSchema, insertCrossReferenceSchema, insertCrossReferenceMappingSchema, type User } from "@shared/schema";
 import { z } from "zod";
 
 // Extend Express Request interface to include user
@@ -654,6 +654,127 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ message: "Data source attribute deleted successfully" });
     } catch (error) {
       console.error("Delete data source attribute error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Cross Reference routes
+  app.get("/api/cross-references", authenticateToken, async (req, res) => {
+    try {
+      const crossReferences = await storage.getAllCrossReferences();
+      res.json(crossReferences);
+    } catch (error) {
+      console.error("Get cross references error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.get("/api/cross-references/:id", authenticateToken, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const crossReference = await storage.getCrossReference(id);
+      if (!crossReference) {
+        return res.status(404).json({ message: "Cross reference not found" });
+      }
+      res.json(crossReference);
+    } catch (error) {
+      console.error("Get cross reference error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.post("/api/cross-references", authenticateToken, async (req, res) => {
+    try {
+      const crossReferenceData = insertCrossReferenceSchema.parse(req.body);
+      const crossReference = await storage.createCrossReference(crossReferenceData);
+      res.json(crossReference);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid input", errors: error.errors });
+      }
+      console.error("Create cross reference error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.put("/api/cross-references/:id", authenticateToken, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const crossReferenceData = insertCrossReferenceSchema.partial().parse(req.body);
+      const crossReference = await storage.updateCrossReference(id, crossReferenceData);
+      res.json(crossReference);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid input", errors: error.errors });
+      }
+      console.error("Update cross reference error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.delete("/api/cross-references/:id", authenticateToken, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteCrossReference(id);
+      res.json({ message: "Cross reference deleted successfully" });
+    } catch (error) {
+      console.error("Delete cross reference error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Cross Reference Mapping routes
+  app.get("/api/cross-references/:id/mappings", authenticateToken, async (req, res) => {
+    try {
+      const crossReferenceId = parseInt(req.params.id);
+      const mappings = await storage.getCrossReferenceMappings(crossReferenceId);
+      res.json(mappings);
+    } catch (error) {
+      console.error("Get cross reference mappings error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.post("/api/cross-references/:id/mappings", authenticateToken, async (req, res) => {
+    try {
+      const crossReferenceId = parseInt(req.params.id);
+      const mappingData = insertCrossReferenceMappingSchema.parse({
+        ...req.body,
+        crossReferenceId
+      });
+      const mapping = await storage.createCrossReferenceMapping(mappingData);
+      res.json(mapping);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid input", errors: error.errors });
+      }
+      console.error("Create cross reference mapping error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.put("/api/cross-references/:id/mappings/:mappingId", authenticateToken, async (req, res) => {
+    try {
+      const mappingId = parseInt(req.params.mappingId);
+      const mappingData = insertCrossReferenceMappingSchema.partial().parse(req.body);
+      const mapping = await storage.updateCrossReferenceMapping(mappingId, mappingData);
+      res.json(mapping);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid input", errors: error.errors });
+      }
+      console.error("Update cross reference mapping error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.delete("/api/cross-references/:id/mappings/:mappingId", authenticateToken, async (req, res) => {
+    try {
+      const mappingId = parseInt(req.params.mappingId);
+      await storage.deleteCrossReferenceMapping(mappingId);
+      res.json({ message: "Cross reference mapping deleted successfully" });
+    } catch (error) {
+      console.error("Delete cross reference mapping error:", error);
       res.status(500).json({ message: "Internal server error" });
     }
   });

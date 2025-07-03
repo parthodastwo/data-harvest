@@ -12,6 +12,8 @@ import UserManagement from "@/pages/user-management";
 import DataSystems from "@/pages/data-systems";
 import DataSources from "@/pages/data-sources";
 import DataSourceDetails from "@/pages/data-source-details";
+import CrossReferences from "@/pages/cross-references";
+import CrossReferenceDetails from "@/pages/cross-reference-details";
 import NotFound from "@/pages/not-found";
 
 function AuthenticatedRoute({ component: Component, ...props }: any) {
@@ -56,6 +58,12 @@ function Router() {
       </Route>
       <Route path="/data-sources/:id">
         {(params) => <AuthenticatedRoute component={DataSourceDetails} {...params} />}
+      </Route>
+      <Route path="/cross-references">
+        {(params) => <AuthenticatedRoute component={CrossReferences} {...params} />}
+      </Route>
+      <Route path="/cross-references/:id">
+        {(params) => <AuthenticatedRoute component={CrossReferenceDetails} {...params} />}
       </Route>
       <Route component={NotFound} />
     </Switch>

@@ -71,6 +71,26 @@ export const dataSourceAttributes = pgTable("data_source_attributes", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+export const crossReferences = pgTable("cross_references", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  dataSystemId: integer("data_system_id").references(() => dataSystems.id).notNull(),
+  isActive: boolean("is_active").default(true).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const crossReferenceMappings = pgTable("cross_reference_mappings", {
+  id: serial("id").primaryKey(),
+  crossReferenceId: integer("cross_reference_id").references(() => crossReferences.id).notNull(),
+  sourceDataSourceId: integer("source_data_source_id").references(() => dataSources.id).notNull(),
+  sourceAttributeId: integer("source_attribute_id").references(() => dataSourceAttributes.id).notNull(),
+  targetDataSourceId: integer("target_data_source_id").references(() => dataSources.id).notNull(),
+  targetAttributeId: integer("target_attribute_id").references(() => dataSourceAttributes.id).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
   createdAt: true,
@@ -143,6 +163,18 @@ export const insertDataSourceAttributeSchema = createInsertSchema(dataSourceAttr
   updatedAt: true,
 });
 
+export const insertCrossReferenceSchema = createInsertSchema(crossReferences).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertCrossReferenceMappingSchema = createInsertSchema(crossReferenceMappings).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type LoginRequest = z.infer<typeof loginSchema>;
@@ -160,3 +192,7 @@ export type InsertDataSource = z.infer<typeof insertDataSourceSchema>;
 export type DataSource = typeof dataSources.$inferSelect;
 export type InsertDataSourceAttribute = z.infer<typeof insertDataSourceAttributeSchema>;
 export type DataSourceAttribute = typeof dataSourceAttributes.$inferSelect;
+export type InsertCrossReference = z.infer<typeof insertCrossReferenceSchema>;
+export type CrossReference = typeof crossReferences.$inferSelect;
+export type InsertCrossReferenceMapping = z.infer<typeof insertCrossReferenceMappingSchema>;
+export type CrossReferenceMapping = typeof crossReferenceMappings.$inferSelect;
