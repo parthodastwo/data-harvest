@@ -376,6 +376,15 @@ export default function DataSourceDetails() {
                             <Edit className="h-4 w-4" />
                             Edit
                           </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleDeleteAttribute(attribute)}
+                            className="flex items-center gap-1"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                            Delete
+                          </Button>
                         </div>
                       </TableCell>
                     </TableRow>
