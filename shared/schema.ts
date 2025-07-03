@@ -57,7 +57,6 @@ export const dataSources = pgTable("data_sources", {
   filename: text("filename").notNull(),
   activeFlag: boolean("active_flag").default(true).notNull(),
   isMaster: boolean("is_master").default(false).notNull(),
-  attributes: text("attributes").notNull(), // JSON string
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

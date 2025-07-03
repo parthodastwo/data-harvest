@@ -42,7 +42,6 @@ function CreateDataSourceModal({ isOpen, onClose, editingSource }: CreateDataSou
       filename: "",
       activeFlag: true,
       isMaster: false,
-      attributes: "[]",
     },
   });
 
@@ -56,7 +55,7 @@ function CreateDataSourceModal({ isOpen, onClose, editingSource }: CreateDataSou
         filename: editingSource.filename,
         activeFlag: editingSource.activeFlag,
         isMaster: editingSource.isMaster,
-        attributes: editingSource.attributes,
+
       });
     } else {
       form.reset({
@@ -66,7 +65,7 @@ function CreateDataSourceModal({ isOpen, onClose, editingSource }: CreateDataSou
         filename: "",
         activeFlag: true,
         isMaster: false,
-        attributes: "[]",
+
       });
     }
   }, [editingSource, form]);
@@ -105,13 +104,6 @@ function CreateDataSourceModal({ isOpen, onClose, editingSource }: CreateDataSou
   });
 
   const onSubmit = (data: InsertDataSource) => {
-    // Validate JSON attributes
-    try {
-      JSON.parse(data.attributes);
-    } catch (e) {
-      form.setError("attributes", { message: "Invalid JSON format" });
-      return;
-    }
     createSourceMutation.mutate(data);
   };
 
@@ -186,23 +178,7 @@ function CreateDataSourceModal({ isOpen, onClose, editingSource }: CreateDataSou
                 </FormItem>
               )}
             />
-            <FormField
-              control={form.control}
-              name="attributes"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Attributes (JSON)</FormLabel>
-                  <FormControl>
-                    <Textarea 
-                      placeholder="Enter JSON attributes (e.g., [])" 
-                      {...field} 
-                      className="font-mono text-sm"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+
             <div className="flex space-x-4">
               <FormField
                 control={form.control}

@@ -110,6 +110,9 @@ Changelog:
 - July 03, 2025. Recreated Data Sources with updated schema (dataSystemId, name, description, filename, activeFlag, isMaster, attributes)
 - July 03, 2025. Added comprehensive validation for mandatory fields (name for Data Systems, name/filename/dataSystemId for Data Sources)
 - July 03, 2025. Implemented referential integrity protection - prevents deleting Data Systems with associated Data Sources
+- July 03, 2025. Added Data Source Attributes management with dedicated table and full CRUD operations
+- July 03, 2025. Implemented master-details layout for Data Source details with scrollable attributes section
+- July 03, 2025. Removed attributes JSON field from Data Sources table - now using dedicated dataSourceAttributes table
 
 ## User Preferences
 
