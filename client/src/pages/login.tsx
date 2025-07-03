@@ -36,12 +36,8 @@ export default function Login() {
       setLoginError(null);
       await login(data);
     } catch (error) {
-      // Handle login errors gracefully
-      if (error instanceof Error) {
-        setLoginError(error.message);
-      } else {
-        setLoginError("Login failed. Please check your credentials and try again.");
-      }
+      // Always show the same error message for security
+      setLoginError("Invalid username or password");
     }
   };
 

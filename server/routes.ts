@@ -90,17 +90,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Find user
       const user = await storage.getUserByUsername(validatedData.username);
       if (!user) {
-        return res.status(401).json({ message: "Invalid credentials" });
+        return res.status(401).json({ message: "Invalid username or password" });
       }
 
       // Check password
       const isValidPassword = await bcrypt.compare(validatedData.password, user.password);
       if (!isValidPassword) {
-        return res.status(401).json({ message: "Invalid credentials" });
+        return res.status(401).json({ message: "Invalid username or password" });
       }
 
       if (!user.isActive) {
-        return res.status(401).json({ message: "Account is disabled" });
+        return res.status(401).json({ message: "Invalid username or password" });
       }
 
       // Generate JWT token
@@ -111,10 +111,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ user: userWithoutPassword, token });
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: "Validation error", errors: error.errors });
+        return res.status(401).json({ message: "Invalid username or password" });
       }
       console.error("Login error:", error);
-      res.status(500).json({ message: "Internal server error" });
+      res.status(401).json({ message: "Invalid username or password" });
     }
   });
 
