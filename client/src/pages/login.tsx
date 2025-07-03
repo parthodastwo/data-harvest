@@ -7,13 +7,15 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { loginSchema, type LoginRequest } from "@shared/schema";
-import { Heart, Eye, EyeOff } from "lucide-react";
+import { Heart, Eye, EyeOff, AlertCircle } from "lucide-react";
 import { useState, useEffect } from "react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export default function Login() {
   const [, setLocation] = useLocation();
   const { login, isAuthenticated, isLoading } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
+  const [loginError, setLoginError] = useState<string | null>(null);
 
   const form = useForm<LoginRequest>({
     resolver: zodResolver(loginSchema),
@@ -30,7 +32,17 @@ export default function Login() {
   }, [isAuthenticated, setLocation]);
 
   const onSubmit = async (data: LoginRequest) => {
-    await login(data);
+    try {
+      setLoginError(null);
+      await login(data);
+    } catch (error) {
+      // Handle login errors gracefully
+      if (error instanceof Error) {
+        setLoginError(error.message);
+      } else {
+        setLoginError("Login failed. Please check your credentials and try again.");
+      }
+    }
   };
 
   if (isLoading) {
@@ -57,6 +69,14 @@ export default function Login() {
           {/* Login Form */}
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              {loginError && (
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    {loginError}
+                  </AlertDescription>
+                </Alert>
+              )}
               <FormField
                 control={form.control}
                 name="username"
