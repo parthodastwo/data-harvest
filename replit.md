@@ -106,6 +106,10 @@ Changelog:
 - July 02, 2025. Initial setup
 - July 02, 2025. Added user management functionality with admin role controls for creating users, changing passwords, and managing user status
 - July 02, 2025. Added Data Systems and Data Sources management with full CRUD operations, admin-only access, and hierarchical navigation
+- July 03, 2025. Simplified Data Systems by removing connection string field
+- July 03, 2025. Recreated Data Sources with updated schema (dataSystemId, name, description, filename, activeFlag, isMaster, attributes)
+- July 03, 2025. Added comprehensive validation for mandatory fields (name for Data Systems, name/filename/dataSystemId for Data Sources)
+- July 03, 2025. Implemented referential integrity protection - prevents deleting Data Systems with associated Data Sources
 
 ## User Preferences
 
