@@ -36,7 +36,7 @@ function CreateAttributeModal({ isOpen, onClose, dataSourceId, editingAttribute 
     defaultValues: {
       dataSourceId: dataSourceId,
       name: "",
-      dataType: "",
+      dataType: "none",
       format: "",
     },
   });
@@ -47,14 +47,14 @@ function CreateAttributeModal({ isOpen, onClose, dataSourceId, editingAttribute 
       form.reset({
         dataSourceId: editingAttribute.dataSourceId,
         name: editingAttribute.name,
-        dataType: editingAttribute.dataType || "",
+        dataType: editingAttribute.dataType || "none",
         format: editingAttribute.format || "",
       });
     } else {
       form.reset({
         dataSourceId: dataSourceId,
         name: "",
-        dataType: "",
+        dataType: "none",
         format: "",
       });
     }
@@ -92,9 +92,12 @@ function CreateAttributeModal({ isOpen, onClose, dataSourceId, editingAttribute 
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[500px]" aria-describedby="attribute-dialog-description">
         <DialogHeader>
           <DialogTitle>{editingAttribute ? "Edit Attribute" : "Create New Attribute"}</DialogTitle>
+          <div id="attribute-dialog-description" className="sr-only">
+            {editingAttribute ? "Edit attribute details" : "Add a new attribute to the data source"}
+          </div>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -117,14 +120,14 @@ function CreateAttributeModal({ isOpen, onClose, dataSourceId, editingAttribute 
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Data Type</FormLabel>
-                  <Select value={field.value || ""} onValueChange={field.onChange}>
+                  <Select value={field.value || "none"} onValueChange={field.onChange}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Select data type (optional)" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="">None</SelectItem>
+                      <SelectItem value="none">None</SelectItem>
                       <SelectItem value="string">String</SelectItem>
                       <SelectItem value="number">Number</SelectItem>
                       <SelectItem value="date">Date</SelectItem>
@@ -172,9 +175,6 @@ export default function DataSourceDetails() {
 
   // Extract ID from the current location path
   const dataSourceId = location.split('/').pop() ? parseInt(location.split('/').pop()!) : 0;
-  
-  console.log("DataSourceDetails - Location:", location);
-  console.log("DataSourceDetails - DataSourceId:", dataSourceId);
 
   const { data: dataSource, isLoading: isLoadingSource } = useQuery<DataSource>({
     queryKey: ["/api/data-sources", dataSourceId],
@@ -187,9 +187,7 @@ export default function DataSourceDetails() {
       if (!response.ok) {
         throw new Error("Failed to fetch data source");
       }
-      const data = await response.json();
-      console.log("Fetched data source:", data);
-      return data;
+      return response.json();
     },
     enabled: !!dataSourceId,
   });
@@ -209,9 +207,7 @@ export default function DataSourceDetails() {
       if (!response.ok) {
         throw new Error("Failed to fetch attributes");
       }
-      const data = await response.json();
-      console.log("Fetched attributes:", data);
-      return data;
+      return response.json();
     },
     enabled: !!dataSourceId,
   });
@@ -285,7 +281,7 @@ export default function DataSourceDetails() {
             className="flex items-center gap-2"
           >
             <ArrowLeft className="h-4 w-4" />
-            Back to Data Sources List
+            Back
           </Button>
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Data Source Details</h1>
@@ -366,11 +362,7 @@ export default function DataSourceDetails() {
             </div>
           ) : attributes.length === 0 ? (
             <div className="text-center py-8">
-              <p className="text-muted-foreground mb-4">No attributes defined for this data source</p>
-              <Button onClick={() => setCreateAttributeModalOpen(true)} className="flex items-center gap-2">
-                <Plus className="h-4 w-4" />
-                Add First Attribute
-              </Button>
+              <p className="text-muted-foreground">No attributes defined for this data source</p>
             </div>
           ) : (
             <div className="border rounded-lg">
