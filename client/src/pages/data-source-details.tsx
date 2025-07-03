@@ -297,26 +297,10 @@ export default function DataSourceDetails() {
         <CardHeader>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="text-sm font-medium text-muted-foreground">Name</label>
               <p className="text-lg font-semibold">{dataSource.name}</p>
-            </div>
-            <div>
-              <label className="text-sm font-medium text-muted-foreground">Data System</label>
-              <p className="text-lg">{getDataSystemName(dataSource.dataSystemId)}</p>
-            </div>
-            <div>
-              <label className="text-sm font-medium text-muted-foreground">Filename</label>
-              <p className="text-lg font-mono">{dataSource.filename}</p>
-            </div>
-            <div>
-              <label className="text-sm font-medium text-muted-foreground">Status</label>
-              <div className="mt-1">
-                <Badge variant={dataSource.activeFlag ? "default" : "secondary"}>
-                  {dataSource.activeFlag ? "Active" : "Inactive"}
-                </Badge>
-              </div>
             </div>
             <div>
               <label className="text-sm font-medium text-muted-foreground">Type</label>
@@ -328,12 +312,6 @@ export default function DataSourceDetails() {
                 )}
               </div>
             </div>
-            {dataSource.description && (
-              <div className="md:col-span-2">
-                <label className="text-sm font-medium text-muted-foreground">Description</label>
-                <p className="text-lg">{dataSource.description}</p>
-              </div>
-            )}
           </div>
         </CardContent>
       </Card>
