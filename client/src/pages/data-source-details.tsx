@@ -306,7 +306,7 @@ export default function DataSourceDetails() {
                 {dataSource.isMaster ? (
                   <Badge variant="destructive">Master</Badge>
                 ) : (
-                  <Badge variant="outline">Standard</Badge>
+                  <Badge variant="outline">Reference</Badge>
                 )}
               </div>
             </div>

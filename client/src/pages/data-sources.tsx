@@ -370,7 +370,7 @@ export default function DataSources() {
                     {source.isMaster ? (
                       <Badge variant="destructive">Master</Badge>
                     ) : (
-                      <Badge variant="outline">Standard</Badge>
+                      <Badge variant="outline">Reference</Badge>
                     )}
                   </TableCell>
                   <TableCell className="text-right">
