@@ -59,17 +59,16 @@ export function Sidebar() {
           <ul className="space-y-2">
             {menuItems.filter(item => !item.adminOnly || user?.role === "admin").map((item, index) => (
               <li key={index}>
-                <button
-                  onClick={() => setLocation(item.path)}
+                <div
                   className={`flex items-center w-full px-4 py-3 rounded-lg font-medium transition-colors ${
                     location === item.path
                       ? "text-blue-600 bg-blue-50"
-                      : "text-gray-600 hover:text-blue-600 hover:bg-blue-50"
+                      : "text-gray-600"
                   } ${isCollapsed ? 'justify-center' : ''}`}
                 >
                   <item.icon className={`h-5 w-5 ${!isCollapsed ? 'mr-3' : ''}`} />
                   {!isCollapsed && item.label}
-                </button>
+                </div>
               </li>
             ))}
           </ul>
