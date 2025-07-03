@@ -17,7 +17,7 @@ import { insertCrossReferenceMappingSchema, type CrossReference, type CrossRefer
 import { apiRequest } from "@/lib/queryClient";
 import { useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
-import { MainLayout } from "@/components/layout/main-layout";
+
 
 const createMappingSchema = insertCrossReferenceMappingSchema.omit({ crossReferenceId: true });
 
@@ -349,26 +349,22 @@ export default function CrossReferenceDetails() {
 
   if (crossReferenceLoading) {
     return (
-      <MainLayout>
-        <div className="p-6">
-          <p className="text-muted-foreground">Loading cross reference...</p>
-        </div>
-      </MainLayout>
+      <div className="p-6">
+        <p className="text-muted-foreground">Loading cross reference...</p>
+      </div>
     );
   }
 
   if (!crossReference) {
     return (
-      <MainLayout>
-        <div className="p-6">
-          <p className="text-red-600">Cross reference not found</p>
-        </div>
-      </MainLayout>
+      <div className="p-6">
+        <p className="text-red-600">Cross reference not found</p>
+      </div>
     );
   }
 
   return (
-    <MainLayout>
+    <>
       <div className="p-6 space-y-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
@@ -516,6 +512,6 @@ export default function CrossReferenceDetails() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </MainLayout>
+    </>
   );
 }

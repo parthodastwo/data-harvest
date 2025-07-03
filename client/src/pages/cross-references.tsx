@@ -17,8 +17,6 @@ import { insertCrossReferenceSchema, type CrossReference, type InsertCrossRefere
 import { apiRequest } from "@/lib/queryClient";
 import { useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
-import { MainLayout } from "@/components/layout/main-layout";
-
 interface CreateCrossReferenceModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -39,17 +37,14 @@ function CreateCrossReferenceModal({ isOpen, onClose, editingCrossReference }: C
     },
   });
 
-  const { data: dataSystems } = useQuery({
+  const { data: dataSystems } = useQuery<DataSystem[]>({
     queryKey: ["/api/data-systems"],
     enabled: isOpen,
   });
 
   const createMutation = useMutation({
     mutationFn: async (data: InsertCrossReference) => {
-      const response = await apiRequest(`/api/cross-references`, {
-        method: "POST",
-        body: JSON.stringify(data),
-      });
+      const response = await apiRequest("POST", "/api/cross-references", data);
       return response.json();
     },
     onSuccess: () => {
@@ -65,10 +60,7 @@ function CreateCrossReferenceModal({ isOpen, onClose, editingCrossReference }: C
 
   const updateMutation = useMutation({
     mutationFn: async (data: InsertCrossReference) => {
-      const response = await apiRequest(`/api/cross-references/${editingCrossReference!.id}`, {
-        method: "PUT",
-        body: JSON.stringify(data),
-      });
+      const response = await apiRequest("PUT", `/api/cross-references/${editingCrossReference!.id}`, data);
       return response.json();
     },
     onSuccess: () => {
@@ -174,15 +166,13 @@ export default function CrossReferences() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: crossReferences, isLoading } = useQuery({
+  const { data: crossReferences, isLoading } = useQuery<CrossReference[]>({
     queryKey: ["/api/cross-references"],
   });
 
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
-      await apiRequest(`/api/cross-references/${id}`, {
-        method: "DELETE",
-      });
+      await apiRequest("DELETE", `/api/cross-references/${id}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/cross-references"] });
@@ -213,7 +203,7 @@ export default function CrossReferences() {
   };
 
   return (
-    <MainLayout>
+    <>
       <div className="p-6 space-y-6">
         <div className="flex items-center justify-between">
           <div>
@@ -322,6 +312,6 @@ export default function CrossReferences() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </MainLayout>
+    </>
   );
 }
