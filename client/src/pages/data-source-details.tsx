@@ -430,144 +430,151 @@ export default function DataSourceDetails() {
   }
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="outline"
-            onClick={() => setLocation("/data-sources")}
-            className="flex items-center gap-2"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back
-          </Button>
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">Data Source Details</h1>
-            <p className="text-muted-foreground">
-              View and manage attributes for this data source
-            </p>
+    <>
+      <div className="h-screen flex flex-col">
+        {/* Fixed Header */}
+        <div className="flex-shrink-0 p-6 space-y-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <Button
+                variant="outline"
+                onClick={() => setLocation("/data-sources")}
+                className="flex items-center gap-2"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Back
+              </Button>
+              <div>
+                <h1 className="text-3xl font-bold tracking-tight">Data Source Details</h1>
+                <p className="text-muted-foreground">
+                  View and manage attributes for this data source
+                </p>
+              </div>
+            </div>
           </div>
+
+          {/* Master: Data Source Information */}
+          <Card>
+            <CardContent className="py-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Name</label>
+                  <p className="text-lg font-semibold mt-1">{dataSource.name}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Type</label>
+                  <div className="mt-1">
+                    {dataSource.isMaster ? (
+                      <Badge variant="destructive">Master</Badge>
+                    ) : (
+                      <Badge variant="outline">Reference</Badge>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Scrollable Attributes Section */}
+        <div className="flex-1 px-6 pb-6 overflow-hidden">
+          <Card className="flex flex-col h-full">
+            <CardHeader className="flex-shrink-0">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Attributes</CardTitle>
+                  <CardDescription>Manage attributes for this data source</CardDescription>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button onClick={() => setCreateAttributeModalOpen(true)} className="flex items-center gap-2">
+                    <Plus className="h-4 w-4" />
+                    Add Attribute
+                  </Button>
+                  <div className="relative">
+                    <Button variant="outline" className="flex items-center gap-2" disabled={csvUploadMutation.isPending}>
+                      <Upload className="h-4 w-4" />
+                      Add Attribute - CSV Upload
+                    </Button>
+                    <input
+                      type="file"
+                      accept=".csv"
+                      onChange={handleCSVUpload}
+                      className="absolute inset-0 opacity-0 cursor-pointer"
+                      disabled={csvUploadMutation.isPending}
+                    />
+                  </div>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="flex-1 overflow-hidden p-0">
+              {isLoadingAttributes ? (
+                <div className="space-y-4 p-6">
+                  <div className="h-8 bg-gray-200 rounded animate-pulse"></div>
+                  <div className="h-8 bg-gray-200 rounded animate-pulse"></div>
+                </div>
+              ) : attributes.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-muted-foreground">No attributes defined for this data source</p>
+                </div>
+              ) : (
+                <div className="border-t h-full">
+                  <div className="h-full overflow-y-auto">
+                    <Table>
+                      <TableHeader className="sticky top-0 bg-white z-10">
+                        <TableRow>
+                          <TableHead className="bg-white">Name</TableHead>
+                          <TableHead className="bg-white">Data Type</TableHead>
+                          <TableHead className="bg-white">Format</TableHead>
+                          <TableHead className="text-right bg-white">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {attributes.map((attribute: DataSourceAttribute) => (
+                          <TableRow key={attribute.id}>
+                            <TableCell className="font-medium">{attribute.name}</TableCell>
+                            <TableCell>
+                              {attribute.dataType ? (
+                                <Badge variant="outline">{attribute.dataType}</Badge>
+                              ) : (
+                                <span className="text-muted-foreground">Not specified</span>
+                              )}
+                            </TableCell>
+                            <TableCell className="font-mono text-sm">
+                              {attribute.format || <span className="text-muted-foreground">Not specified</span>}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex items-center justify-end gap-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleEditAttribute(attribute)}
+                                  className="flex items-center gap-1"
+                                >
+                                  <Edit className="h-4 w-4" />
+                                  Edit
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleDeleteAttribute(attribute)}
+                                  className="flex items-center gap-1"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                  Delete
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
       </div>
-
-      {/* Master: Data Source Information */}
-      <Card>
-        <CardContent className="py-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="text-sm font-medium text-muted-foreground">Name</label>
-              <p className="text-lg font-semibold mt-1">{dataSource.name}</p>
-            </div>
-            <div>
-              <label className="text-sm font-medium text-muted-foreground">Type</label>
-              <div className="mt-1">
-                {dataSource.isMaster ? (
-                  <Badge variant="destructive">Master</Badge>
-                ) : (
-                  <Badge variant="outline">Reference</Badge>
-                )}
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Details: Attributes List */}
-      <Card className="flex flex-col h-96">
-        <CardHeader className="flex-shrink-0">
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>Attributes</CardTitle>
-              <CardDescription>Manage attributes for this data source</CardDescription>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button onClick={() => setCreateAttributeModalOpen(true)} className="flex items-center gap-2">
-                <Plus className="h-4 w-4" />
-                Add Attribute
-              </Button>
-              <div className="relative">
-                <Button variant="outline" className="flex items-center gap-2" disabled={csvUploadMutation.isPending}>
-                  <Upload className="h-4 w-4" />
-                  Add Attribute - CSV Upload
-                </Button>
-                <input
-                  type="file"
-                  accept=".csv"
-                  onChange={handleCSVUpload}
-                  className="absolute inset-0 opacity-0 cursor-pointer"
-                  disabled={csvUploadMutation.isPending}
-                />
-              </div>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="flex-1 overflow-hidden p-0">
-          {isLoadingAttributes ? (
-            <div className="space-y-4 p-6">
-              <div className="h-8 bg-gray-200 rounded animate-pulse"></div>
-              <div className="h-8 bg-gray-200 rounded animate-pulse"></div>
-            </div>
-          ) : attributes.length === 0 ? (
-            <div className="text-center py-8">
-              <p className="text-muted-foreground">No attributes defined for this data source</p>
-            </div>
-          ) : (
-            <div className="border-t">
-              <div className="max-h-full overflow-y-auto">
-                <Table>
-                  <TableHeader className="sticky top-0 bg-white z-10">
-                    <TableRow>
-                      <TableHead className="bg-white">Name</TableHead>
-                      <TableHead className="bg-white">Data Type</TableHead>
-                      <TableHead className="bg-white">Format</TableHead>
-                      <TableHead className="text-right bg-white">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {attributes.map((attribute: DataSourceAttribute) => (
-                      <TableRow key={attribute.id}>
-                        <TableCell className="font-medium">{attribute.name}</TableCell>
-                        <TableCell>
-                          {attribute.dataType ? (
-                            <Badge variant="outline">{attribute.dataType}</Badge>
-                          ) : (
-                            <span className="text-muted-foreground">Not specified</span>
-                          )}
-                        </TableCell>
-                        <TableCell className="font-mono text-sm">
-                          {attribute.format || <span className="text-muted-foreground">Not specified</span>}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex items-center justify-end gap-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleEditAttribute(attribute)}
-                              className="flex items-center gap-1"
-                            >
-                              <Edit className="h-4 w-4" />
-                              Edit
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleDeleteAttribute(attribute)}
-                              className="flex items-center gap-1"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                              Delete
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
 
       <CreateAttributeModal
         isOpen={createAttributeModalOpen}
@@ -595,6 +602,6 @@ export default function DataSourceDetails() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </>
   );
 }
