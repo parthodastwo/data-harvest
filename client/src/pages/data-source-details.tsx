@@ -172,9 +172,25 @@ export default function DataSourceDetails() {
 
   // Extract ID from the current location path
   const dataSourceId = location.split('/').pop() ? parseInt(location.split('/').pop()!) : 0;
+  
+  console.log("DataSourceDetails - Location:", location);
+  console.log("DataSourceDetails - DataSourceId:", dataSourceId);
 
   const { data: dataSource, isLoading: isLoadingSource } = useQuery<DataSource>({
     queryKey: ["/api/data-sources", dataSourceId],
+    queryFn: async () => {
+      const response = await fetch(`/api/data-sources/${dataSourceId}`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("health_data_harvest_token")}`,
+        },
+      });
+      if (!response.ok) {
+        throw new Error("Failed to fetch data source");
+      }
+      const data = await response.json();
+      console.log("Fetched data source:", data);
+      return data;
+    },
     enabled: !!dataSourceId,
   });
 
@@ -184,6 +200,19 @@ export default function DataSourceDetails() {
 
   const { data: attributes = [], isLoading: isLoadingAttributes } = useQuery<DataSourceAttribute[]>({
     queryKey: ["/api/data-sources", dataSourceId, "attributes"],
+    queryFn: async () => {
+      const response = await fetch(`/api/data-sources/${dataSourceId}/attributes`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("health_data_harvest_token")}`,
+        },
+      });
+      if (!response.ok) {
+        throw new Error("Failed to fetch attributes");
+      }
+      const data = await response.json();
+      console.log("Fetched attributes:", data);
+      return data;
+    },
     enabled: !!dataSourceId,
   });
 
