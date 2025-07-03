@@ -33,6 +33,7 @@ export interface IStorage {
   deleteDataSystem(id: number): Promise<void>;
   
   // Data Source methods
+  getAllDataSources(): Promise<DataSource[]>;
   getDataSourcesBySystem(dataSystemId: number): Promise<DataSource[]>;
   getDataSource(id: number): Promise<DataSource | undefined>;
   createDataSource(dataSource: InsertDataSource): Promise<DataSource>;
@@ -174,6 +175,10 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Data Source methods
+  async getAllDataSources(): Promise<DataSource[]> {
+    return await db.select().from(dataSources).orderBy(desc(dataSources.createdAt));
+  }
+
   async getDataSourcesBySystem(dataSystemId: number): Promise<DataSource[]> {
     return await db.select().from(dataSources).where(eq(dataSources.dataSystemId, dataSystemId)).orderBy(desc(dataSources.createdAt));
   }

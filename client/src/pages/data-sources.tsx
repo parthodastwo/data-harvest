@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Edit, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -20,25 +21,57 @@ import { insertDataSourceSchema } from "@shared/schema";
 interface CreateDataSourceModalProps {
   isOpen: boolean;
   onClose: () => void;
-  dataSystemId: number;
   editingSource?: DataSource | null;
 }
 
-function CreateDataSourceModal({ isOpen, onClose, dataSystemId, editingSource }: CreateDataSourceModalProps) {
+function CreateDataSourceModal({ isOpen, onClose, editingSource }: CreateDataSourceModalProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
   const form = useForm<InsertDataSource>({
     resolver: zodResolver(insertDataSourceSchema),
     defaultValues: {
-      name: editingSource?.name || "",
-      description: editingSource?.description || "",
-      sourceType: editingSource?.sourceType || "",
-      connectionString: editingSource?.connectionString || "",
-      dataSystemId: dataSystemId,
-      isActive: editingSource?.isActive ?? true,
+      dataSystemId: 0,
+      name: "",
+      description: "",
+      filename: "",
+      activeFlag: true,
+      isMaster: false,
+      attributes: "[]",
     },
   });
+
+  // Reset form values when editingSource changes
+  useEffect(() => {
+    if (editingSource) {
+      form.reset({
+        dataSystemId: editingSource.dataSystemId,
+        name: editingSource.name,
+        description: editingSource.description || "",
+        filename: editingSource.filename,
+        activeFlag: editingSource.activeFlag,
+        isMaster: editingSource.isMaster,
+        attributes: editingSource.attributes,
+      });
+    } else {
+      form.reset({
+        dataSystemId: 0,
+        name: "",
+        description: "",
+        filename: "",
+        activeFlag: true,
+        isMaster: false,
+        attributes: "[]",
+      });
+    }
+  }, [editingSource, form]);
+
+  const { data: dataSystems = [] } = useQuery<DataSystem[]>({
+    queryKey: ["/api/data-systems"],
+  });
+
+  // Filter active data systems for the dropdown
+  const activeDataSystems = dataSystems.filter(system => system.isActive);
 
   const createSourceMutation = useMutation({
     mutationFn: async (data: InsertDataSource) => {
@@ -49,7 +82,7 @@ function CreateDataSourceModal({ isOpen, onClose, dataSystemId, editingSource }:
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/data-sources", dataSystemId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/data-sources"] });
       toast({
         title: "Success",
         description: editingSource ? "Data source updated successfully" : "Data source created successfully",
@@ -67,17 +100,48 @@ function CreateDataSourceModal({ isOpen, onClose, dataSystemId, editingSource }:
   });
 
   const onSubmit = (data: InsertDataSource) => {
+    // Validate JSON attributes
+    try {
+      JSON.parse(data.attributes);
+    } catch (e) {
+      form.setError("attributes", { message: "Invalid JSON format" });
+      return;
+    }
     createSourceMutation.mutate(data);
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>{editingSource ? "Edit Data Source" : "Create New Data Source"}</DialogTitle>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="dataSystemId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Data System</FormLabel>
+                  <Select value={field.value?.toString()} onValueChange={(value) => field.onChange(Number(value))}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a data system" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {activeDataSystems.map((system) => (
+                        <SelectItem key={system.id} value={system.id.toString()}>
+                          {system.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             <FormField
               control={form.control}
               name="name"
@@ -98,7 +162,7 @@ function CreateDataSourceModal({ isOpen, onClose, dataSystemId, editingSource }:
                 <FormItem>
                   <FormLabel>Description</FormLabel>
                   <FormControl>
-                    <Textarea placeholder="Enter description" {...field} />
+                    <Textarea placeholder="Enter description (optional)" {...field} value={field.value || ""} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -106,12 +170,12 @@ function CreateDataSourceModal({ isOpen, onClose, dataSystemId, editingSource }:
             />
             <FormField
               control={form.control}
-              name="sourceType"
+              name="filename"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Source Type</FormLabel>
+                  <FormLabel>Filename</FormLabel>
                   <FormControl>
-                    <Input placeholder="Enter source type" {...field} />
+                    <Input placeholder="Enter filename" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -119,17 +183,65 @@ function CreateDataSourceModal({ isOpen, onClose, dataSystemId, editingSource }:
             />
             <FormField
               control={form.control}
-              name="connectionString"
+              name="attributes"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Connection String</FormLabel>
+                  <FormLabel>Attributes (JSON)</FormLabel>
                   <FormControl>
-                    <Input placeholder="Enter connection string" {...field} />
+                    <Textarea 
+                      placeholder="Enter JSON attributes (e.g., [])" 
+                      {...field} 
+                      className="font-mono text-sm"
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
+            <div className="flex space-x-4">
+              <FormField
+                control={form.control}
+                name="activeFlag"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                    <FormControl>
+                      <Checkbox 
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                    <div className="space-y-1 leading-none">
+                      <FormLabel>Active</FormLabel>
+                      <p className="text-sm text-muted-foreground">
+                        Enable this data source
+                      </p>
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="isMaster"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                    <FormControl>
+                      <Checkbox 
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                    <div className="space-y-1 leading-none">
+                      <FormLabel>Master</FormLabel>
+                      <p className="text-sm text-muted-foreground">
+                        Mark as master source
+                      </p>
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
             <div className="flex justify-end space-x-2">
               <Button type="button" variant="outline" onClick={onClose}>
                 Cancel
@@ -148,18 +260,16 @@ function CreateDataSourceModal({ isOpen, onClose, dataSystemId, editingSource }:
 export default function DataSources() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [selectedSystemId, setSelectedSystemId] = useState<number | null>(null);
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [editingSource, setEditingSource] = useState<DataSource | null>(null);
   const [deletingSource, setDeletingSource] = useState<DataSource | null>(null);
 
-  const { data: dataSystems = [], isLoading: isLoadingSystems } = useQuery<DataSystem[]>({
-    queryKey: ["/api/data-systems"],
+  const { data: dataSources = [], isLoading } = useQuery<DataSource[]>({
+    queryKey: ["/api/data-sources"],
   });
 
-  const { data: dataSources = [], isLoading: isLoadingSources } = useQuery<DataSource[]>({
-    queryKey: ["/api/data-sources", selectedSystemId],
-    enabled: !!selectedSystemId,
+  const { data: dataSystems = [] } = useQuery<DataSystem[]>({
+    queryKey: ["/api/data-systems"],
   });
 
   const deleteSourceMutation = useMutation({
@@ -167,7 +277,7 @@ export default function DataSources() {
       return apiRequest("DELETE", `/api/data-sources/${id}`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/data-sources", selectedSystemId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/data-sources"] });
       toast({
         title: "Success",
         description: "Data source deleted successfully",
@@ -197,9 +307,12 @@ export default function DataSources() {
     setEditingSource(null);
   };
 
-  const selectedSystem = dataSystems.find(system => system.id === selectedSystemId);
+  const getDataSystemName = (dataSystemId: number) => {
+    const system = dataSystems.find(s => s.id === dataSystemId);
+    return system?.name || "Unknown";
+  };
 
-  if (isLoadingSystems) {
+  if (isLoading) {
     return (
       <div className="p-6">
         <div className="space-y-4">
@@ -219,49 +332,13 @@ export default function DataSources() {
             Manage data sources for your healthcare systems
           </p>
         </div>
-        {selectedSystemId && (
-          <Button onClick={() => setCreateModalOpen(true)} className="flex items-center gap-2">
-            <Plus className="h-4 w-4" />
-            Create Data Source
-          </Button>
-        )}
+        <Button onClick={() => setCreateModalOpen(true)} className="flex items-center gap-2">
+          <Plus className="h-4 w-4" />
+          Create Data Source
+        </Button>
       </div>
 
-      <div className="flex items-center gap-4">
-        <div className="w-64">
-          <Select value={selectedSystemId?.toString() || ""} onValueChange={(value) => setSelectedSystemId(Number(value))}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select a data system" />
-            </SelectTrigger>
-            <SelectContent>
-              {dataSystems.map((system) => (
-                <SelectItem key={system.id} value={system.id.toString()}>
-                  {system.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        {selectedSystem && (
-          <div className="text-sm text-muted-foreground">
-            Selected: {selectedSystem.name}
-          </div>
-        )}
-      </div>
-
-      {!selectedSystemId ? (
-        <div className="text-center py-12">
-          <div className="mx-auto flex max-w-[420px] flex-col items-center justify-center text-center">
-            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-muted">
-              <Plus className="h-10 w-10 text-muted-foreground" />
-            </div>
-            <h3 className="mt-4 text-lg font-semibold">Select a data system</h3>
-            <p className="mb-4 mt-2 text-sm text-muted-foreground">
-              Choose a data system from the dropdown above to view and manage its data sources.
-            </p>
-          </div>
-        </div>
-      ) : dataSources.length === 0 ? (
+      {dataSources.length === 0 ? (
         <div className="text-center py-12">
           <div className="mx-auto flex max-w-[420px] flex-col items-center justify-center text-center">
             <div className="flex h-20 w-20 items-center justify-center rounded-full bg-muted">
@@ -269,7 +346,7 @@ export default function DataSources() {
             </div>
             <h3 className="mt-4 text-lg font-semibold">No data sources available</h3>
             <p className="mb-4 mt-2 text-sm text-muted-foreground">
-              This data system doesn't have any data sources yet. Create your first one to get started.
+              You haven't created any data sources yet. Get started by creating your first one.
             </p>
             <Button onClick={() => setCreateModalOpen(true)} className="flex items-center gap-2">
               <Plus className="h-4 w-4" />
@@ -283,9 +360,11 @@ export default function DataSources() {
             <TableHeader>
               <TableRow>
                 <TableHead>Name</TableHead>
+                <TableHead>Data System</TableHead>
                 <TableHead>Description</TableHead>
-                <TableHead>Source Type</TableHead>
+                <TableHead>Filename</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Master</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -293,12 +372,20 @@ export default function DataSources() {
               {dataSources.map((source: DataSource) => (
                 <TableRow key={source.id}>
                   <TableCell className="font-medium">{source.name}</TableCell>
+                  <TableCell>{getDataSystemName(source.dataSystemId)}</TableCell>
                   <TableCell>{source.description}</TableCell>
-                  <TableCell>{source.sourceType}</TableCell>
+                  <TableCell className="font-mono text-sm">{source.filename}</TableCell>
                   <TableCell>
-                    <Badge variant={source.isActive ? "default" : "secondary"}>
-                      {source.isActive ? "Active" : "Inactive"}
+                    <Badge variant={source.activeFlag ? "default" : "secondary"}>
+                      {source.activeFlag ? "Active" : "Inactive"}
                     </Badge>
+                  </TableCell>
+                  <TableCell>
+                    {source.isMaster ? (
+                      <Badge variant="destructive">Master</Badge>
+                    ) : (
+                      <Badge variant="outline">Standard</Badge>
+                    )}
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-2">
@@ -329,14 +416,11 @@ export default function DataSources() {
         </div>
       )}
 
-      {selectedSystemId && (
-        <CreateDataSourceModal
-          isOpen={createModalOpen}
-          onClose={handleCreateClose}
-          dataSystemId={selectedSystemId}
-          editingSource={editingSource}
-        />
-      )}
+      <CreateDataSourceModal
+        isOpen={createModalOpen}
+        onClose={handleCreateClose}
+        editingSource={editingSource}
+      />
 
       <AlertDialog open={!!deletingSource} onOpenChange={() => setDeletingSource(null)}>
         <AlertDialogContent>

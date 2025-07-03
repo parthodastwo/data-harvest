@@ -405,6 +405,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Data Sources API routes
+  app.get("/api/data-sources", authenticateToken, async (req: any, res) => {
+    try {
+      const dataSources = await storage.getAllDataSources();
+      res.json(dataSources);
+    } catch (error) {
+      console.error("Get data sources error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
   app.get("/api/data-systems/:systemId/data-sources", authenticateToken, async (req: any, res) => {
     try {
       const systemId = parseInt(req.params.systemId);
