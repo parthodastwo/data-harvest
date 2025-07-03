@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import { loginSchema, registerSchema, changePasswordSchema, createUserSchema, updateUserPasswordSchema, insertDataExtractionSchema, insertExtractionConfigurationSchema, insertDataSystemSchema, insertDataSourceSchema, type User } from "@shared/schema";
+import { loginSchema, registerSchema, changePasswordSchema, createUserSchema, updateUserPasswordSchema, insertDataExtractionSchema, insertExtractionConfigurationSchema, insertDataSystemSchema, insertDataSourceSchema, insertDataSourceAttributeSchema, type User } from "@shared/schema";
 import { z } from "zod";
 
 // Extend Express Request interface to include user
@@ -562,6 +562,98 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ message: "Data source deleted successfully" });
     } catch (error) {
       console.error("Delete data source error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Data Source Attributes API routes
+  app.get("/api/data-sources/:sourceId/attributes", authenticateToken, async (req: any, res) => {
+    try {
+      const sourceId = parseInt(req.params.sourceId);
+      const attributes = await storage.getDataSourceAttributes(sourceId);
+      res.json(attributes);
+    } catch (error) {
+      console.error("Get data source attributes error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.post("/api/data-sources/:sourceId/attributes", authenticateToken, async (req: any, res) => {
+    try {
+      const currentUser = await storage.getUser(req.user.id);
+      if (!currentUser || currentUser.role !== "admin") {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      const sourceId = parseInt(req.params.sourceId);
+      const attributeData = { ...req.body, dataSourceId: sourceId };
+      
+      const result = insertDataSourceAttributeSchema.safeParse(attributeData);
+      if (!result.success) {
+        return res.status(400).json({ 
+          message: "Validation failed", 
+          errors: result.error.errors 
+        });
+      }
+
+      // Additional validation for required name field
+      if (!result.data.name || result.data.name.trim() === "") {
+        return res.status(400).json({ 
+          message: "Name is required for data source attribute" 
+        });
+      }
+
+      const attribute = await storage.createDataSourceAttribute(result.data);
+      res.status(201).json(attribute);
+    } catch (error) {
+      console.error("Create data source attribute error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.put("/api/data-source-attributes/:id", authenticateToken, async (req: any, res) => {
+    try {
+      const currentUser = await storage.getUser(req.user.id);
+      if (!currentUser || currentUser.role !== "admin") {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      const id = parseInt(req.params.id);
+      const result = insertDataSourceAttributeSchema.partial().safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ 
+          message: "Validation failed", 
+          errors: result.error.errors 
+        });
+      }
+
+      // Additional validation for required name field when updating
+      if (result.data.name !== undefined && (!result.data.name || result.data.name.trim() === "")) {
+        return res.status(400).json({ 
+          message: "Name is required for data source attribute" 
+        });
+      }
+
+      const attribute = await storage.updateDataSourceAttribute(id, result.data);
+      res.json(attribute);
+    } catch (error) {
+      console.error("Update data source attribute error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.delete("/api/data-source-attributes/:id", authenticateToken, async (req: any, res) => {
+    try {
+      const currentUser = await storage.getUser(req.user.id);
+      if (!currentUser || currentUser.role !== "admin") {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      const id = parseInt(req.params.id);
+      await storage.deleteDataSourceAttribute(id);
+      res.json({ message: "Data source attribute deleted successfully" });
+    } catch (error) {
+      console.error("Delete data source attribute error:", error);
       res.status(500).json({ message: "Internal server error" });
     }
   });

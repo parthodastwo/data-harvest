@@ -62,6 +62,16 @@ export const dataSources = pgTable("data_sources", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+export const dataSourceAttributes = pgTable("data_source_attributes", {
+  id: serial("id").primaryKey(),
+  dataSourceId: integer("data_source_id").references(() => dataSources.id).notNull(),
+  name: text("name").notNull(),
+  dataType: text("data_type"), // string, number, date
+  format: text("format"), // e.g., MM/DD/YYYY
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
   createdAt: true,
@@ -128,6 +138,12 @@ export const insertDataSourceSchema = createInsertSchema(dataSources).omit({
   updatedAt: true,
 });
 
+export const insertDataSourceAttributeSchema = createInsertSchema(dataSourceAttributes).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type LoginRequest = z.infer<typeof loginSchema>;
@@ -143,3 +159,5 @@ export type InsertDataSystem = z.infer<typeof insertDataSystemSchema>;
 export type DataSystem = typeof dataSystems.$inferSelect;
 export type InsertDataSource = z.infer<typeof insertDataSourceSchema>;
 export type DataSource = typeof dataSources.$inferSelect;
+export type InsertDataSourceAttribute = z.infer<typeof insertDataSourceAttributeSchema>;
+export type DataSourceAttribute = typeof dataSourceAttributes.$inferSelect;

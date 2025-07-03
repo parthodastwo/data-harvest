@@ -1,4 +1,4 @@
-import { users, dataExtractions, extractionConfigurations, dataSystems, dataSources, type User, type InsertUser, type DataExtraction, type InsertDataExtraction, type ExtractionConfiguration, type InsertExtractionConfiguration, type DataSystem, type InsertDataSystem, type DataSource, type InsertDataSource } from "@shared/schema";
+import { users, dataExtractions, extractionConfigurations, dataSystems, dataSources, dataSourceAttributes, type User, type InsertUser, type DataExtraction, type InsertDataExtraction, type ExtractionConfiguration, type InsertExtractionConfiguration, type DataSystem, type InsertDataSystem, type DataSource, type InsertDataSource, type DataSourceAttribute, type InsertDataSourceAttribute } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc } from "drizzle-orm";
 
@@ -39,6 +39,13 @@ export interface IStorage {
   createDataSource(dataSource: InsertDataSource): Promise<DataSource>;
   updateDataSource(id: number, dataSource: Partial<InsertDataSource>): Promise<DataSource>;
   deleteDataSource(id: number): Promise<void>;
+  
+  // Data Source Attribute methods
+  getDataSourceAttributes(dataSourceId: number): Promise<DataSourceAttribute[]>;
+  getDataSourceAttribute(id: number): Promise<DataSourceAttribute | undefined>;
+  createDataSourceAttribute(attribute: InsertDataSourceAttribute): Promise<DataSourceAttribute>;
+  updateDataSourceAttribute(id: number, attribute: Partial<InsertDataSourceAttribute>): Promise<DataSourceAttribute>;
+  deleteDataSourceAttribute(id: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -207,6 +214,37 @@ export class DatabaseStorage implements IStorage {
 
   async deleteDataSource(id: number): Promise<void> {
     await db.delete(dataSources).where(eq(dataSources.id, id));
+  }
+
+  // Data Source Attribute methods
+  async getDataSourceAttributes(dataSourceId: number): Promise<DataSourceAttribute[]> {
+    return await db.select().from(dataSourceAttributes).where(eq(dataSourceAttributes.dataSourceId, dataSourceId)).orderBy(desc(dataSourceAttributes.createdAt));
+  }
+
+  async getDataSourceAttribute(id: number): Promise<DataSourceAttribute | undefined> {
+    const [attribute] = await db.select().from(dataSourceAttributes).where(eq(dataSourceAttributes.id, id));
+    return attribute || undefined;
+  }
+
+  async createDataSourceAttribute(attribute: InsertDataSourceAttribute): Promise<DataSourceAttribute> {
+    const [newAttribute] = await db
+      .insert(dataSourceAttributes)
+      .values(attribute)
+      .returning();
+    return newAttribute;
+  }
+
+  async updateDataSourceAttribute(id: number, attribute: Partial<InsertDataSourceAttribute>): Promise<DataSourceAttribute> {
+    const [updatedAttribute] = await db
+      .update(dataSourceAttributes)
+      .set({ ...attribute, updatedAt: new Date() })
+      .where(eq(dataSourceAttributes.id, id))
+      .returning();
+    return updatedAttribute;
+  }
+
+  async deleteDataSourceAttribute(id: number): Promise<void> {
+    await db.delete(dataSourceAttributes).where(eq(dataSourceAttributes.id, id));
   }
 }
 

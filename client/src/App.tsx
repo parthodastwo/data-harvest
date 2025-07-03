@@ -11,6 +11,7 @@ import Dashboard from "@/pages/dashboard";
 import UserManagement from "@/pages/user-management";
 import DataSystems from "@/pages/data-systems";
 import DataSources from "@/pages/data-sources";
+import DataSourceDetails from "@/pages/data-source-details";
 import NotFound from "@/pages/not-found";
 
 function AuthenticatedRoute({ component: Component, ...props }: any) {
@@ -52,6 +53,9 @@ function Router() {
       </Route>
       <Route path="/data-sources">
         {(params) => <AuthenticatedRoute component={DataSources} {...params} />}
+      </Route>
+      <Route path="/data-sources/:id">
+        {(params) => <AuthenticatedRoute component={DataSourceDetails} {...params} />}
       </Route>
       <Route component={NotFound} />
     </Switch>

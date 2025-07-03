@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Edit, Trash2 } from "lucide-react";
+import { Plus, Edit, Trash2, Eye } from "lucide-react";
+import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -264,6 +265,7 @@ function CreateDataSourceModal({ isOpen, onClose, editingSource }: CreateDataSou
 export default function DataSources() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [, setLocation] = useLocation();
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [editingSource, setEditingSource] = useState<DataSource | null>(null);
   const [deletingSource, setDeletingSource] = useState<DataSource | null>(null);
@@ -304,6 +306,10 @@ export default function DataSources() {
 
   const handleDelete = (source: DataSource) => {
     setDeletingSource(source);
+  };
+
+  const handleDetails = (source: DataSource) => {
+    setLocation(`/data-sources/${source.id}`);
   };
 
   const handleCreateClose = () => {
@@ -393,6 +399,15 @@ export default function DataSources() {
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleDetails(source)}
+                        className="flex items-center gap-1"
+                      >
+                        <Eye className="h-4 w-4" />
+                        Details
+                      </Button>
                       <Button
                         variant="outline"
                         size="sm"
