@@ -296,7 +296,6 @@ export default function DataSourceDetails() {
       <Card>
         <CardHeader>
           <CardTitle>Data Source Information</CardTitle>
-          <CardDescription>Overview of the selected data source</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -399,15 +398,6 @@ export default function DataSourceDetails() {
                           >
                             <Edit className="h-4 w-4" />
                             Edit
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleDeleteAttribute(attribute)}
-                            className="flex items-center gap-1"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                            Delete
                           </Button>
                         </div>
                       </TableCell>
