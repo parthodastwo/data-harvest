@@ -431,54 +431,50 @@ export default function DataSourceDetails() {
 
   return (
     <>
-      <div className="h-full flex flex-col">
-        {/* Fixed Header */}
-        <div className="flex-shrink-0 p-6 space-y-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Button
-                variant="outline"
-                onClick={() => setLocation("/data-sources")}
-                className="flex items-center gap-2"
-              >
-                <ArrowLeft className="h-4 w-4" />
-                Back
-              </Button>
-              <div>
-                <h1 className="text-3xl font-bold tracking-tight">Data Source Details</h1>
-                <p className="text-muted-foreground">
-                  View and manage attributes for this data source
-                </p>
-              </div>
+      <div className="p-6 space-y-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Button
+              variant="outline"
+              onClick={() => setLocation("/data-sources")}
+              className="flex items-center gap-2"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Back
+            </Button>
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight">Data Source Details</h1>
+              <p className="text-muted-foreground">
+                View and manage attributes for this data source
+              </p>
             </div>
           </div>
-
-          {/* Master: Data Source Information */}
-          <Card>
-            <CardContent className="py-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">Name</label>
-                  <p className="text-lg font-semibold mt-1">{dataSource.name}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">Type</label>
-                  <div className="mt-1">
-                    {dataSource.isMaster ? (
-                      <Badge variant="destructive">Master</Badge>
-                    ) : (
-                      <Badge variant="outline">Reference</Badge>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
         </div>
 
+        {/* Master: Data Source Information */}
+        <Card>
+          <CardContent className="py-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium text-muted-foreground">Name</label>
+                <p className="text-lg font-semibold mt-1">{dataSource.name}</p>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-muted-foreground">Type</label>
+                <div className="mt-1">
+                  {dataSource.isMaster ? (
+                    <Badge variant="destructive">Master</Badge>
+                  ) : (
+                    <Badge variant="outline">Reference</Badge>
+                  )}
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Scrollable Attributes Section */}
-        <div className="flex-1 px-6 pb-6 overflow-hidden">
-          <Card className="flex flex-col h-full">
+        <Card className="flex flex-col" style={{ height: 'calc(100vh - 450px)' }}>
             <CardHeader className="flex-shrink-0">
               <div className="flex items-center justify-between">
                 <div>
@@ -572,8 +568,7 @@ export default function DataSourceDetails() {
                 </div>
               )}
             </CardContent>
-          </Card>
-        </div>
+        </Card>
       </div>
 
       <CreateAttributeModal
