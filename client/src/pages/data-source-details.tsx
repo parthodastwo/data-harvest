@@ -294,13 +294,11 @@ export default function DataSourceDetails() {
 
       {/* Master: Data Source Information */}
       <Card>
-        <CardHeader>
-        </CardHeader>
-        <CardContent>
+        <CardContent className="py-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="text-sm font-medium text-muted-foreground">Name</label>
-              <p className="text-lg font-semibold">{dataSource.name}</p>
+              <p className="text-lg font-semibold mt-1">{dataSource.name}</p>
             </div>
             <div>
               <label className="text-sm font-medium text-muted-foreground">Type</label>
@@ -317,8 +315,8 @@ export default function DataSourceDetails() {
       </Card>
 
       {/* Details: Attributes List */}
-      <Card>
-        <CardHeader>
+      <Card className="flex flex-col h-96">
+        <CardHeader className="flex-shrink-0">
           <div className="flex items-center justify-between">
             <div>
               <CardTitle>Attributes</CardTitle>
@@ -330,9 +328,9 @@ export default function DataSourceDetails() {
             </Button>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="flex-1 overflow-hidden p-0">
           {isLoadingAttributes ? (
-            <div className="space-y-4">
+            <div className="space-y-4 p-6">
               <div className="h-8 bg-gray-200 rounded animate-pulse"></div>
               <div className="h-8 bg-gray-200 rounded animate-pulse"></div>
             </div>
@@ -341,56 +339,58 @@ export default function DataSourceDetails() {
               <p className="text-muted-foreground">No attributes defined for this data source</p>
             </div>
           ) : (
-            <div className="border rounded-lg">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Data Type</TableHead>
-                    <TableHead>Format</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {attributes.map((attribute: DataSourceAttribute) => (
-                    <TableRow key={attribute.id}>
-                      <TableCell className="font-medium">{attribute.name}</TableCell>
-                      <TableCell>
-                        {attribute.dataType ? (
-                          <Badge variant="outline">{attribute.dataType}</Badge>
-                        ) : (
-                          <span className="text-muted-foreground">Not specified</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="font-mono text-sm">
-                        {attribute.format || <span className="text-muted-foreground">Not specified</span>}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleEditAttribute(attribute)}
-                            className="flex items-center gap-1"
-                          >
-                            <Edit className="h-4 w-4" />
-                            Edit
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleDeleteAttribute(attribute)}
-                            className="flex items-center gap-1"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                            Delete
-                          </Button>
-                        </div>
-                      </TableCell>
+            <div className="border-t">
+              <div className="max-h-full overflow-y-auto">
+                <Table>
+                  <TableHeader className="sticky top-0 bg-white z-10">
+                    <TableRow>
+                      <TableHead className="bg-white">Name</TableHead>
+                      <TableHead className="bg-white">Data Type</TableHead>
+                      <TableHead className="bg-white">Format</TableHead>
+                      <TableHead className="text-right bg-white">Actions</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {attributes.map((attribute: DataSourceAttribute) => (
+                      <TableRow key={attribute.id}>
+                        <TableCell className="font-medium">{attribute.name}</TableCell>
+                        <TableCell>
+                          {attribute.dataType ? (
+                            <Badge variant="outline">{attribute.dataType}</Badge>
+                          ) : (
+                            <span className="text-muted-foreground">Not specified</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="font-mono text-sm">
+                          {attribute.format || <span className="text-muted-foreground">Not specified</span>}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleEditAttribute(attribute)}
+                              className="flex items-center gap-1"
+                            >
+                              <Edit className="h-4 w-4" />
+                              Edit
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleDeleteAttribute(attribute)}
+                              className="flex items-center gap-1"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                              Delete
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             </div>
           )}
         </CardContent>
