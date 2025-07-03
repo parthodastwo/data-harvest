@@ -431,7 +431,7 @@ export default function DataSourceDetails() {
 
   return (
     <>
-      <div className="h-screen flex flex-col">
+      <div className="h-full flex flex-col">
         {/* Fixed Header */}
         <div className="flex-shrink-0 p-6 space-y-6">
           <div className="flex items-center justify-between">
