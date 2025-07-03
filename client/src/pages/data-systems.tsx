@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Edit, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
@@ -29,15 +30,31 @@ function CreateDataSystemModal({ isOpen, onClose, editingSystem }: CreateDataSys
   const form = useForm<InsertDataSystem>({
     resolver: zodResolver(insertDataSystemSchema),
     defaultValues: {
-      name: editingSystem?.name || "",
-      description: editingSystem?.description || "",
-      category: editingSystem?.category || "",
-      version: editingSystem?.version || "",
-      vendor: editingSystem?.vendor || "",
-      connectionString: editingSystem?.connectionString || "",
-      isActive: editingSystem?.isActive ?? true,
+      name: "",
+      description: "",
+      connectionString: "",
+      isActive: true,
     },
   });
+
+  // Reset form values when editingSystem changes
+  useEffect(() => {
+    if (editingSystem) {
+      form.reset({
+        name: editingSystem.name,
+        description: editingSystem.description || "",
+        connectionString: editingSystem.connectionString || "",
+        isActive: editingSystem.isActive,
+      });
+    } else {
+      form.reset({
+        name: "",
+        description: "",
+        connectionString: "",
+        isActive: true,
+      });
+    }
+  }, [editingSystem, form]);
 
   const createSystemMutation = useMutation({
     mutationFn: async (data: InsertDataSystem) => {
@@ -97,46 +114,7 @@ function CreateDataSystemModal({ isOpen, onClose, editingSystem }: CreateDataSys
                 <FormItem>
                   <FormLabel>Description</FormLabel>
                   <FormControl>
-                    <Textarea placeholder="Enter description" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="category"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Category</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Enter category" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="version"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Version</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Enter version" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="vendor"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Vendor</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Enter vendor" {...field} />
+                    <Textarea placeholder="Enter description" {...field} value={field.value || ""} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -149,8 +127,29 @@ function CreateDataSystemModal({ isOpen, onClose, editingSystem }: CreateDataSys
                 <FormItem>
                   <FormLabel>Connection String</FormLabel>
                   <FormControl>
-                    <Input placeholder="Enter connection string" {...field} />
+                    <Input placeholder="Enter connection string" {...field} value={field.value || ""} />
                   </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="isActive"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                  <FormControl>
+                    <Checkbox 
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                  <div className="space-y-1 leading-none">
+                    <FormLabel>Active</FormLabel>
+                    <p className="text-sm text-muted-foreground">
+                      Enable this data system for use
+                    </p>
+                  </div>
                   <FormMessage />
                 </FormItem>
               )}
@@ -265,9 +264,7 @@ export default function DataSystems() {
               <TableRow>
                 <TableHead>Name</TableHead>
                 <TableHead>Description</TableHead>
-                <TableHead>Category</TableHead>
-                <TableHead>Version</TableHead>
-                <TableHead>Vendor</TableHead>
+                <TableHead>Connection String</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
@@ -277,9 +274,7 @@ export default function DataSystems() {
                 <TableRow key={system.id}>
                   <TableCell className="font-medium">{system.name}</TableCell>
                   <TableCell>{system.description}</TableCell>
-                  <TableCell>{system.category}</TableCell>
-                  <TableCell>{system.version}</TableCell>
-                  <TableCell>{system.vendor}</TableCell>
+                  <TableCell className="font-mono text-sm">{system.connectionString}</TableCell>
                   <TableCell>
                     <Badge variant={system.isActive ? "default" : "secondary"}>
                       {system.isActive ? "Active" : "Inactive"}
