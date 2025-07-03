@@ -45,12 +45,11 @@ function CreateMappingModal({ isOpen, onClose, crossReferenceId, editingMapping 
 
   const { data: crossReference } = useQuery<CrossReference>({
     queryKey: ["/api/cross-references", crossReferenceId],
-    enabled: isOpen,
+    enabled: !!crossReferenceId,
   });
 
   const { data: allDataSources } = useQuery<DataSource[]>({
     queryKey: ["/api/data-sources"],
-    enabled: isOpen,
   });
 
   const { data: sourceDataSources } = useQuery<DataSource[]>({
@@ -60,7 +59,7 @@ function CreateMappingModal({ isOpen, onClose, crossReferenceId, editingMapping 
       const response = await apiRequest("GET", `/api/data-systems/${crossReference.dataSystemId}/data-sources`);
       return response.json();
     },
-    enabled: isOpen && !!crossReference?.dataSystemId,
+    enabled: !!crossReference?.dataSystemId,
   });
 
   const { data: sourceAttributes } = useQuery<DataSourceAttribute[]>({
@@ -209,7 +208,9 @@ function CreateMappingModal({ isOpen, onClose, crossReferenceId, editingMapping 
                     <SelectValue placeholder="Select target data source" />
                   </SelectTrigger>
                   <SelectContent>
-                    {allDataSources?.filter((ds: DataSource) => ds.activeFlag).map((source: DataSource) => (
+                    {sourceDataSources?.filter((ds: DataSource) => 
+                      ds.activeFlag && ds.id !== form.watch("sourceDataSourceId")
+                    ).map((source: DataSource) => (
                       <SelectItem key={source.id} value={source.id.toString()}>
                         {source.name}
                       </SelectItem>
