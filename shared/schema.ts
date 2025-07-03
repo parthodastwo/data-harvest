@@ -44,7 +44,6 @@ export const dataSystems = pgTable("data_systems", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   description: text("description"),
-  connectionString: text("connection_string"),
   isActive: boolean("is_active").default(true).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),

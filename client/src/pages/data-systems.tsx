@@ -32,7 +32,6 @@ function CreateDataSystemModal({ isOpen, onClose, editingSystem }: CreateDataSys
     defaultValues: {
       name: "",
       description: "",
-      connectionString: "",
       isActive: true,
     },
   });
@@ -43,14 +42,12 @@ function CreateDataSystemModal({ isOpen, onClose, editingSystem }: CreateDataSys
       form.reset({
         name: editingSystem.name,
         description: editingSystem.description || "",
-        connectionString: editingSystem.connectionString || "",
         isActive: editingSystem.isActive,
       });
     } else {
       form.reset({
         name: "",
         description: "",
-        connectionString: "",
         isActive: true,
       });
     }
@@ -120,19 +117,7 @@ function CreateDataSystemModal({ isOpen, onClose, editingSystem }: CreateDataSys
                 </FormItem>
               )}
             />
-            <FormField
-              control={form.control}
-              name="connectionString"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Connection String</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Enter connection string" {...field} value={field.value || ""} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+
             <FormField
               control={form.control}
               name="isActive"
@@ -264,7 +249,6 @@ export default function DataSystems() {
               <TableRow>
                 <TableHead>Name</TableHead>
                 <TableHead>Description</TableHead>
-                <TableHead>Connection String</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
@@ -274,7 +258,6 @@ export default function DataSystems() {
                 <TableRow key={system.id}>
                   <TableCell className="font-medium">{system.name}</TableCell>
                   <TableCell>{system.description}</TableCell>
-                  <TableCell className="font-mono text-sm">{system.connectionString}</TableCell>
                   <TableCell>
                     <Badge variant={system.isActive ? "default" : "secondary"}>
                       {system.isActive ? "Active" : "Inactive"}
