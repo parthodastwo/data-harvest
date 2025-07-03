@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -36,12 +36,32 @@ function CreateMappingModal({ isOpen, onClose, crossReferenceId, editingMapping 
   const form = useForm<z.infer<typeof createMappingSchema>>({
     resolver: zodResolver(createMappingSchema),
     defaultValues: {
-      sourceDataSourceId: editingMapping?.sourceDataSourceId || 0,
-      sourceAttributeId: editingMapping?.sourceAttributeId || 0,
-      targetDataSourceId: editingMapping?.targetDataSourceId || 0,
-      targetAttributeId: editingMapping?.targetAttributeId || 0,
+      sourceDataSourceId: 0,
+      sourceAttributeId: 0,
+      targetDataSourceId: 0,
+      targetAttributeId: 0,
     },
   });
+
+  // Update form values when editingMapping changes
+  useEffect(() => {
+    if (editingMapping) {
+      console.log("Setting form values for editing mapping:", editingMapping);
+      form.reset({
+        sourceDataSourceId: editingMapping.sourceDataSourceId,
+        sourceAttributeId: editingMapping.sourceAttributeId,
+        targetDataSourceId: editingMapping.targetDataSourceId,
+        targetAttributeId: editingMapping.targetAttributeId,
+      });
+    } else {
+      form.reset({
+        sourceDataSourceId: 0,
+        sourceAttributeId: 0,
+        targetDataSourceId: 0,
+        targetAttributeId: 0,
+      });
+    }
+  }, [editingMapping, form]);
 
   const { data: crossReference } = useQuery<CrossReference>({
     queryKey: ["/api/cross-references", crossReferenceId],
@@ -147,7 +167,7 @@ function CreateMappingModal({ isOpen, onClose, crossReferenceId, editingMapping 
               <div className="space-y-2">
                 <Label htmlFor="sourceDataSourceId">Data Source *</Label>
                 <Select
-                  value={form.watch("sourceDataSourceId")?.toString()}
+                  value={form.watch("sourceDataSourceId") > 0 ? form.watch("sourceDataSourceId").toString() : ""}
                   onValueChange={(value) => {
                     form.setValue("sourceDataSourceId", parseInt(value));
                     form.setValue("sourceAttributeId", 0);
@@ -172,7 +192,7 @@ function CreateMappingModal({ isOpen, onClose, crossReferenceId, editingMapping 
               <div className="space-y-2">
                 <Label htmlFor="sourceAttributeId">Attribute *</Label>
                 <Select
-                  value={form.watch("sourceAttributeId")?.toString()}
+                  value={form.watch("sourceAttributeId") > 0 ? form.watch("sourceAttributeId").toString() : ""}
                   onValueChange={(value) => form.setValue("sourceAttributeId", parseInt(value))}
                   disabled={!form.watch("sourceDataSourceId")}
                 >
@@ -198,7 +218,7 @@ function CreateMappingModal({ isOpen, onClose, crossReferenceId, editingMapping 
               <div className="space-y-2">
                 <Label htmlFor="targetDataSourceId">Data Source *</Label>
                 <Select
-                  value={form.watch("targetDataSourceId")?.toString()}
+                  value={form.watch("targetDataSourceId") > 0 ? form.watch("targetDataSourceId").toString() : ""}
                   onValueChange={(value) => {
                     form.setValue("targetDataSourceId", parseInt(value));
                     form.setValue("targetAttributeId", 0);
@@ -225,7 +245,7 @@ function CreateMappingModal({ isOpen, onClose, crossReferenceId, editingMapping 
               <div className="space-y-2">
                 <Label htmlFor="targetAttributeId">Attribute *</Label>
                 <Select
-                  value={form.watch("targetAttributeId")?.toString()}
+                  value={form.watch("targetAttributeId") > 0 ? form.watch("targetAttributeId").toString() : ""}
                   onValueChange={(value) => form.setValue("targetAttributeId", parseInt(value))}
                   disabled={!form.watch("targetDataSourceId")}
                 >
