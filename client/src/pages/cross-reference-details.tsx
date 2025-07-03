@@ -68,20 +68,6 @@ function CreateMappingModal({ isOpen, onClose, crossReferenceId, editingMapping 
     }
   }, [editingMapping, form, queryClient]);
 
-  // Debug logging for form values and attributes
-  useEffect(() => {
-    console.log("Form values:", {
-      sourceDataSourceId: form.watch("sourceDataSourceId"),
-      sourceAttributeId: form.watch("sourceAttributeId"),
-      targetDataSourceId: form.watch("targetDataSourceId"),
-      targetAttributeId: form.watch("targetAttributeId")
-    });
-    console.log("Attributes:", {
-      sourceAttributes: sourceAttributes?.length || 0,
-      targetAttributes: targetAttributes?.length || 0
-    });
-  }, [form.watch("sourceDataSourceId"), form.watch("sourceAttributeId"), form.watch("targetDataSourceId"), form.watch("targetAttributeId"), sourceAttributes, targetAttributes]);
-
   const { data: crossReference } = useQuery<CrossReference>({
     queryKey: ["/api/cross-references", crossReferenceId],
     enabled: !!crossReferenceId,
@@ -172,6 +158,22 @@ function CreateMappingModal({ isOpen, onClose, crossReferenceId, editingMapping 
       createMutation.mutate(data);
     }
   };
+
+  // Debug logging for form values and attributes
+  useEffect(() => {
+    if (isOpen) {
+      console.log("Form values:", {
+        sourceDataSourceId: form.watch("sourceDataSourceId"),
+        sourceAttributeId: form.watch("sourceAttributeId"),
+        targetDataSourceId: form.watch("targetDataSourceId"),
+        targetAttributeId: form.watch("targetAttributeId")
+      });
+      console.log("Attributes:", {
+        sourceAttributes: sourceAttributes?.length || 0,
+        targetAttributes: targetAttributes?.length || 0
+      });
+    }
+  }, [isOpen, form.watch("sourceDataSourceId"), form.watch("sourceAttributeId"), form.watch("targetDataSourceId"), form.watch("targetAttributeId"), sourceAttributes, targetAttributes]);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
