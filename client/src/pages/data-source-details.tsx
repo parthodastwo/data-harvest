@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useRoute, useLocation } from "wouter";
+import { useLocation } from "wouter";
 import { ArrowLeft, Plus, Edit, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -162,20 +162,16 @@ function CreateAttributeModal({ isOpen, onClose, dataSourceId, editingAttribute 
   );
 }
 
-interface RouteParams {
-  id: string;
-}
-
 export default function DataSourceDetails() {
-  const [match] = useRoute<RouteParams>("/data-sources/:id");
-  const [, setLocation] = useLocation();
+  const [location, setLocation] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [createAttributeModalOpen, setCreateAttributeModalOpen] = useState(false);
   const [editingAttribute, setEditingAttribute] = useState<DataSourceAttribute | null>(null);
   const [deletingAttribute, setDeletingAttribute] = useState<DataSourceAttribute | null>(null);
 
-  const dataSourceId = match?.id ? parseInt(match.id) : 0;
+  // Extract ID from the current location path
+  const dataSourceId = location.split('/').pop() ? parseInt(location.split('/').pop()!) : 0;
 
   const { data: dataSource, isLoading: isLoadingSource } = useQuery<DataSource>({
     queryKey: ["/api/data-sources", dataSourceId],
@@ -231,7 +227,7 @@ export default function DataSourceDetails() {
     return system?.name || "Unknown";
   };
 
-  if (!match) {
+  if (!dataSourceId) {
     return <div>Data source not found</div>;
   }
 
