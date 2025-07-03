@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Heart, BarChart3, Database, Settings, History, Users, Menu, LogOut } from "lucide-react";
+import { Heart, LayoutDashboard, HardDrive, Database, GitBranch, Settings, Users, Menu, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 import { useLocation } from "wouter";
@@ -12,10 +12,10 @@ export function Sidebar() {
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   const menuItems = [
-    { icon: BarChart3, label: "Dashboard", path: "/dashboard" },
-    { icon: Database, label: "Data Systems", path: "/data-systems" },
+    { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard" },
+    { icon: HardDrive, label: "Data Systems", path: "/data-systems" },
     { icon: Database, label: "Data Sources", path: "/data-sources" },
-    { icon: Database, label: "Cross References", path: "/cross-references" },
+    { icon: GitBranch, label: "Cross References", path: "/cross-references" },
     { icon: Settings, label: "Configurations", path: "/configurations" },
     { icon: Users, label: "User Management", path: "/users", adminOnly: true },
   ];
