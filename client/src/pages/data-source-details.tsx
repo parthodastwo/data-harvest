@@ -295,7 +295,6 @@ export default function DataSourceDetails() {
       {/* Master: Data Source Information */}
       <Card>
         <CardHeader>
-          <CardTitle>Data Source Information</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
