@@ -29,7 +29,11 @@ function CreateDataSourceModal({ isOpen, onClose, editingSource }: CreateDataSou
   const queryClient = useQueryClient();
   
   const form = useForm<InsertDataSource>({
-    resolver: zodResolver(insertDataSourceSchema),
+    resolver: zodResolver(insertDataSourceSchema.extend({
+      name: insertDataSourceSchema.shape.name.min(1, "Name is required"),
+      filename: insertDataSourceSchema.shape.filename.min(1, "Filename is required"),
+      dataSystemId: insertDataSourceSchema.shape.dataSystemId.min(1, "Data system is required"),
+    })),
     defaultValues: {
       dataSystemId: 0,
       name: "",

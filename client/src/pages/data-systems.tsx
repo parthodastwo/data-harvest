@@ -28,7 +28,9 @@ function CreateDataSystemModal({ isOpen, onClose, editingSystem }: CreateDataSys
   const queryClient = useQueryClient();
   
   const form = useForm<InsertDataSystem>({
-    resolver: zodResolver(insertDataSystemSchema),
+    resolver: zodResolver(insertDataSystemSchema.extend({
+      name: insertDataSystemSchema.shape.name.min(1, "Name is required"),
+    })),
     defaultValues: {
       name: "",
       description: "",

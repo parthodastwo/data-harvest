@@ -356,6 +356,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
+      // Additional validation for required name field
+      if (!result.data.name || result.data.name.trim() === "") {
+        return res.status(400).json({ 
+          message: "Name is required for creating data system" 
+        });
+      }
+
       const dataSystem = await storage.createDataSystem(result.data);
       res.status(201).json(dataSystem);
     } catch (error) {
@@ -377,6 +384,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ 
           message: "Validation failed", 
           errors: result.error.errors 
+        });
+      }
+
+      // Additional validation for required name field when updating
+      if (result.data.name !== undefined && (!result.data.name || result.data.name.trim() === "")) {
+        return res.status(400).json({ 
+          message: "Name is required for data system" 
         });
       }
 
@@ -457,6 +471,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
+      // Additional validation for required fields
+      if (!result.data.name || result.data.name.trim() === "") {
+        return res.status(400).json({ 
+          message: "Name is required for creating data source" 
+        });
+      }
+
+      if (!result.data.filename || result.data.filename.trim() === "") {
+        return res.status(400).json({ 
+          message: "Filename is required for creating data source" 
+        });
+      }
+
+      if (!result.data.dataSystemId || result.data.dataSystemId === 0) {
+        return res.status(400).json({ 
+          message: "Enter Data system for creating data source" 
+        });
+      }
+
       const dataSource = await storage.createDataSource(result.data);
       res.status(201).json(dataSource);
     } catch (error) {
@@ -478,6 +511,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ 
           message: "Validation failed", 
           errors: result.error.errors 
+        });
+      }
+
+      // Additional validation for required fields when updating
+      if (result.data.name !== undefined && (!result.data.name || result.data.name.trim() === "")) {
+        return res.status(400).json({ 
+          message: "Name is required for data source" 
+        });
+      }
+
+      if (result.data.filename !== undefined && (!result.data.filename || result.data.filename.trim() === "")) {
+        return res.status(400).json({ 
+          message: "Filename is required for data source" 
+        });
+      }
+
+      if (result.data.dataSystemId !== undefined && (!result.data.dataSystemId || result.data.dataSystemId === 0)) {
+        return res.status(400).json({ 
+          message: "Enter Data system for creating data source" 
         });
       }
 
