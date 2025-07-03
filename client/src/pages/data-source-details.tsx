@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { ArrowLeft, Plus, Edit, Trash2 } from "lucide-react";
+import { ArrowLeft, Plus, Edit, Trash2, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -252,6 +252,164 @@ export default function DataSourceDetails() {
     return system?.name || "Unknown";
   };
 
+  // CSV parsing helper functions
+  const inferDataType = (value: string): string => {
+    // Remove whitespace
+    const trimmed = value.trim();
+    
+    // Check if empty
+    if (!trimmed) return "string";
+    
+    // Check for number
+    if (!isNaN(Number(trimmed)) && !isNaN(parseFloat(trimmed))) {
+      return "number";
+    }
+    
+    // Check for date patterns
+    const datePatterns = [
+      /^\d{1,2}\/\d{1,2}\/\d{4}$/,     // MM/DD/YYYY or M/D/YYYY
+      /^\d{4}-\d{2}-\d{2}$/,           // YYYY-MM-DD
+      /^\d{2}-\d{2}-\d{4}$/,           // MM-DD-YYYY
+      /^\d{1,2}-\d{1,2}-\d{4}$/,       // M-D-YYYY
+    ];
+    
+    for (const pattern of datePatterns) {
+      if (pattern.test(trimmed)) {
+        return "date";
+      }
+    }
+    
+    return "string";
+  };
+
+  const detectDateFormat = (value: string): string | null => {
+    const trimmed = value.trim();
+    
+    if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(trimmed)) {
+      return "MM/DD/YYYY";
+    }
+    if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+      return "YYYY-MM-DD";
+    }
+    if (/^\d{2}-\d{2}-\d{4}$/.test(trimmed)) {
+      return "MM-DD-YYYY";
+    }
+    if (/^\d{1,2}-\d{1,2}-\d{4}$/.test(trimmed)) {
+      return "M-D-YYYY";
+    }
+    
+    return null;
+  };
+
+  const parseCSV = (csvText: string): { headers: string[], firstRow: string[] } => {
+    const lines = csvText.trim().split('\n');
+    if (lines.length < 2) {
+      throw new Error("CSV must have at least 2 rows (header + data)");
+    }
+    
+    const parseCSVLine = (line: string): string[] => {
+      const result: string[] = [];
+      let current = '';
+      let inQuotes = false;
+      
+      for (let i = 0; i < line.length; i++) {
+        const char = line[i];
+        
+        if (char === '"') {
+          inQuotes = !inQuotes;
+        } else if (char === ',' && !inQuotes) {
+          result.push(current.trim());
+          current = '';
+        } else {
+          current += char;
+        }
+      }
+      
+      result.push(current.trim());
+      return result;
+    };
+    
+    const headers = parseCSVLine(lines[0]);
+    const firstRow = parseCSVLine(lines[1]);
+    
+    return { headers, firstRow };
+  };
+
+  const csvUploadMutation = useMutation({
+    mutationFn: async (attributes: InsertDataSourceAttribute[]) => {
+      const promises = attributes.map(attr => 
+        apiRequest("POST", `/api/data-sources/${dataSourceId}/attributes`, attr)
+      );
+      return Promise.all(promises);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/data-sources", dataSourceId, "attributes"] });
+      toast({
+        title: "Success",
+        description: "Attributes created from CSV successfully",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "An error occurred",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleCSVUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    
+    if (!file.name.endsWith('.csv')) {
+      toast({
+        title: "Error",
+        description: "Please select a CSV file",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const csvText = e.target?.result as string;
+        const { headers, firstRow } = parseCSV(csvText);
+        
+        if (headers.length !== firstRow.length) {
+          throw new Error("Header count doesn't match data count");
+        }
+        
+        const attributesToCreate: InsertDataSourceAttribute[] = headers.map((header, index) => {
+          const value = firstRow[index] || "";
+          const dataType = inferDataType(value);
+          const format = dataType === "date" ? detectDateFormat(value) : null;
+          
+          return {
+            dataSourceId: dataSourceId!,
+            name: header.trim(),
+            dataType: dataType || undefined,
+            format: format || undefined,
+          };
+        });
+        
+        csvUploadMutation.mutate(attributesToCreate);
+      } catch (error) {
+        toast({
+          title: "Error parsing CSV",
+          description: error instanceof Error ? error.message : "Invalid CSV format",
+          variant: "destructive",
+        });
+      }
+    };
+    
+    reader.readAsText(file);
+    
+    // Clear the input
+    event.target.value = '';
+  };
+
   if (!dataSourceId) {
     return <div>Data source not found</div>;
   }
@@ -322,10 +480,25 @@ export default function DataSourceDetails() {
               <CardTitle>Attributes</CardTitle>
               <CardDescription>Manage attributes for this data source</CardDescription>
             </div>
-            <Button onClick={() => setCreateAttributeModalOpen(true)} className="flex items-center gap-2">
-              <Plus className="h-4 w-4" />
-              Add Attribute
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button onClick={() => setCreateAttributeModalOpen(true)} className="flex items-center gap-2">
+                <Plus className="h-4 w-4" />
+                Add Attribute
+              </Button>
+              <div className="relative">
+                <Button variant="outline" className="flex items-center gap-2" disabled={csvUploadMutation.isPending}>
+                  <Upload className="h-4 w-4" />
+                  Add Attribute - CSV Upload
+                </Button>
+                <input
+                  type="file"
+                  accept=".csv"
+                  onChange={handleCSVUpload}
+                  className="absolute inset-0 opacity-0 cursor-pointer"
+                  disabled={csvUploadMutation.isPending}
+                />
+              </div>
+            </div>
           </div>
         </CardHeader>
         <CardContent className="flex-1 overflow-hidden p-0">
