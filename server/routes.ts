@@ -415,7 +415,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const associatedDataSources = await storage.getDataSourcesBySystem(id);
       if (associatedDataSources.length > 0) {
         return res.status(400).json({ 
-          message: `Cannot delete data system. It has ${associatedDataSources.length} associated data source(s). Please delete the data sources first.` 
+          message: "This data system can not be deleted since data sources exists for this." 
         });
       }
 
