@@ -113,6 +113,10 @@ Changelog:
 - July 03, 2025. Added Data Source Attributes management with dedicated table and full CRUD operations
 - July 03, 2025. Implemented master-details layout for Data Source details with scrollable attributes section
 - July 03, 2025. Removed attributes JSON field from Data Sources table - now using dedicated dataSourceAttributes table
+- July 03, 2025. Added CSV upload functionality for bulk attribute creation with automatic data type inference
+- July 03, 2025. Fixed scrolling layout in data source details - header stays visible, attributes section scrolls independently
+- July 03, 2025. Updated attributes display to show "Reference" instead of "Standard" for non-master data sources
+- July 03, 2025. Improved attributes section spacing and made scrollbar always visible
 
 ## User Preferences
 

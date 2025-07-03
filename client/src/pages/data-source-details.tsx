@@ -474,7 +474,7 @@ export default function DataSourceDetails() {
         </Card>
 
         {/* Scrollable Attributes Section */}
-        <Card className="flex flex-col" style={{ height: 'calc(100vh - 450px)' }}>
+        <Card className="flex flex-col" style={{ height: 'calc(100vh - 400px)', minHeight: '200px' }}>
             <CardHeader className="flex-shrink-0">
               <div className="flex items-center justify-between">
                 <div>
@@ -514,7 +514,7 @@ export default function DataSourceDetails() {
                 </div>
               ) : (
                 <div className="border-t h-full">
-                  <div className="h-full overflow-y-auto">
+                  <div className="h-full overflow-y-scroll">
                     <Table>
                       <TableHeader className="sticky top-0 bg-white z-10">
                         <TableRow>
