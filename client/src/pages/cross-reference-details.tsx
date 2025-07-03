@@ -53,6 +53,11 @@ function CreateMappingModal({ isOpen, onClose, crossReferenceId, editingMapping 
         targetDataSourceId: editingMapping.targetDataSourceId,
         targetAttributeId: editingMapping.targetAttributeId,
       });
+      // Manually invalidate attribute queries to ensure they reload with the new data source IDs
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ["/api/data-sources", editingMapping.sourceDataSourceId, "attributes"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/data-sources", editingMapping.targetDataSourceId, "attributes"] });
+      }, 100);
     } else {
       form.reset({
         sourceDataSourceId: 0,
@@ -61,7 +66,7 @@ function CreateMappingModal({ isOpen, onClose, crossReferenceId, editingMapping 
         targetAttributeId: 0,
       });
     }
-  }, [editingMapping, form]);
+  }, [editingMapping, form, queryClient]);
 
   const { data: crossReference } = useQuery<CrossReference>({
     queryKey: ["/api/cross-references", crossReferenceId],
@@ -86,22 +91,24 @@ function CreateMappingModal({ isOpen, onClose, crossReferenceId, editingMapping 
     queryKey: ["/api/data-sources", form.watch("sourceDataSourceId"), "attributes"],
     queryFn: async () => {
       const sourceId = form.watch("sourceDataSourceId");
-      if (!sourceId) return [];
+      console.log("Loading source attributes for data source ID:", sourceId);
+      if (!sourceId || sourceId === 0) return [];
       const response = await apiRequest("GET", `/api/data-sources/${sourceId}/attributes`);
       return response.json();
     },
-    enabled: isOpen && !!form.watch("sourceDataSourceId"),
+    enabled: isOpen && !!form.watch("sourceDataSourceId") && form.watch("sourceDataSourceId") > 0,
   });
 
   const { data: targetAttributes } = useQuery<DataSourceAttribute[]>({
     queryKey: ["/api/data-sources", form.watch("targetDataSourceId"), "attributes"],
     queryFn: async () => {
       const targetId = form.watch("targetDataSourceId");
-      if (!targetId) return [];
+      console.log("Loading target attributes for data source ID:", targetId);
+      if (!targetId || targetId === 0) return [];
       const response = await apiRequest("GET", `/api/data-sources/${targetId}/attributes`);
       return response.json();
     },
-    enabled: isOpen && !!form.watch("targetDataSourceId"),
+    enabled: isOpen && !!form.watch("targetDataSourceId") && form.watch("targetDataSourceId") > 0,
   });
 
   const createMutation = useMutation({
