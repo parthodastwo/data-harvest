@@ -1046,17 +1046,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return;
       }
       
-      // Get all unique column names
-      const allColumns = new Set<string>();
-      data.forEach(row => {
-        Object.keys(row).forEach(key => allColumns.add(key));
-      });
+      // Preserve column order by collecting columns in the order they appear
+      const columnsInOrder: string[] = [];
+      const seenColumns = new Set<string>();
       
-      const columns = Array.from(allColumns).sort();
+      // Go through each row to collect columns in order of appearance
+      data.forEach(row => {
+        Object.keys(row).forEach(key => {
+          if (!seenColumns.has(key)) {
+            seenColumns.add(key);
+            columnsInOrder.push(key);
+          }
+        });
+      });
       
       stringify(data, {
         header: true,
-        columns: columns
+        columns: columnsInOrder
       }, (err, output) => {
         if (err) reject(err);
         else resolve(output);
