@@ -918,21 +918,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
             outputRow[columnName] = masterRow[attr.name] || '';
           }
           
-          // Find cross references where this master data source is the source
+          // Find cross references for the current data system
           const relevantCrossRefs = crossReferences.filter(cr => 
-            dataSources.some(ds => ds.id === cr.dataSystemId && ds.id === masterDataSource.dataSystemId)
+            cr.dataSystemId === dataSystemId
           );
           
           for (const crossRef of relevantCrossRefs) {
             // Get cross reference mappings
             const mappings = await storage.getCrossReferenceMappings(crossRef.id);
+            console.log(`Processing cross reference: ${crossRef.name} with ${mappings.length} mappings`);
             
             for (const mapping of mappings) {
               // Get source and target data sources
               const sourceDataSource = dataSources.find(ds => ds.id === mapping.sourceDataSourceId);
               const targetDataSource = dataSources.find(ds => ds.id === mapping.targetDataSourceId);
               
-              if (!sourceDataSource || !targetDataSource) continue;
+              if (!sourceDataSource || !targetDataSource) {
+                console.log(`Skipping mapping - source or target data source not found`);
+                continue;
+              }
+              
+              console.log(`Processing mapping: ${sourceDataSource.name} -> ${targetDataSource.name}`);
               
               // Only process if the master data source is the source
               if (sourceDataSource.id === masterDataSource.id) {
@@ -942,17 +948,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 // Find the uploaded file for target data source using file mapping
                 const targetFileName = fileMapping.get(targetDataSource.id);
                 
-                if (!targetFileName) continue;
+                if (!targetFileName) {
+                  console.log(`No uploaded file found for reference data source: ${targetDataSource.name}`);
+                  continue;
+                }
+                
+                console.log(`Found target file: ${targetFileName} for ${targetDataSource.name}`);
                 
                 // Read target CSV data
                 const targetFilePath = path.join(uploadDir, targetFileName);
                 const targetCsvData = await readCSVFile(targetFilePath);
                 
+                if (targetCsvData.length === 0) {
+                  console.log(`No data found in target file: ${targetFileName}`);
+                  continue;
+                }
+                
                 // Get mapping attributes
                 const sourceAttr = masterAttributes.find(attr => attr.id === mapping.sourceAttributeId);
                 const targetAttr = targetAttributes.find(attr => attr.id === mapping.targetAttributeId);
                 
-                if (!sourceAttr || !targetAttr) continue;
+                if (!sourceAttr || !targetAttr) {
+                  console.log(`Source or target attribute not found for mapping`);
+                  continue;
+                }
+                
+                console.log(`Mapping attributes: ${sourceAttr.name} -> ${targetAttr.name}`);
                 
                 // Find matching rows in target data based on cross reference mapping
                 const masterValue = masterRow[sourceAttr.name];
@@ -960,12 +981,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   targetRow[targetAttr.name] === masterValue
                 );
                 
+                console.log(`Master value: ${masterValue}, Found ${matchingTargetRows.length} matching rows`);
+                
                 // Add target data source columns for matching rows
-                for (const targetRow of matchingTargetRows) {
+                if (matchingTargetRows.length > 0) {
+                  // For multiple matching rows, we'll take the first one
+                  // In a more complex scenario, you might want to handle this differently
+                  const targetRow = matchingTargetRows[0];
                   for (const attr of targetAttributes) {
                     const columnName = `${targetDataSource.name}.${attr.name}`;
                     outputRow[columnName] = targetRow[attr.name] || '';
                   }
+                  console.log(`Added ${targetAttributes.length} columns from ${targetDataSource.name}`);
                 }
               }
             }

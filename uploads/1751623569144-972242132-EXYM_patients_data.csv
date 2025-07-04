@@ -1,0 +1,6 @@
+customer_id,member_id,plan,first_name,last_name,DOB,gender,service_date,service_type,service_description
+CUST001,MEM1001,Anthem,John,Doe,1985-04-23,M,2025-06-03,Case Management,Initial intake psychosocial assessment and treatment planning
+CUST002,MEM1002,Health Net,Jane,Smith,1979-11-08,F,2025-06-10,Crisis Intervention,On-site support due to reported domestic conflict
+CUST003,MEM1003,Anthem,Alex,Johnson,1990-02-17,Non-Binary,2025-06-15,Referral,Linked member with housing and food support services
+CUST004,MEM1004,Health Net,Maria,Gonzalez,2001-07-30,F,2025-06-20,Case Management,Follow-up on employment training and educational goals
+
