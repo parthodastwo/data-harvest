@@ -2,8 +2,16 @@ import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
-    const text = (await res.text()) || res.statusText;
-    throw new Error(`${res.status}: ${text}`);
+    let errorMessage = `HTTP error! status: ${res.status}`;
+    try {
+      const errorData = await res.json();
+      if (errorData.message) {
+        errorMessage = errorData.message;
+      }
+    } catch {
+      // If we can't parse JSON, use the default error message
+    }
+    throw new Error(errorMessage);
   }
 }
 
@@ -14,11 +22,11 @@ export async function apiRequest(
 ): Promise<Response> {
   const token = localStorage.getItem("health_data_harvest_token");
   const headers: Record<string, string> = {};
-  
+
   if (data) {
     headers["Content-Type"] = "application/json";
   }
-  
+
   if (token) {
     headers["Authorization"] = `Bearer ${token}`;
   }
@@ -42,7 +50,7 @@ export const getQueryFn: <T>(options: {
   async ({ queryKey }) => {
     const token = localStorage.getItem("health_data_harvest_token");
     const headers: Record<string, string> = {};
-    
+
     if (token) {
       headers["Authorization"] = `Bearer ${token}`;
     }

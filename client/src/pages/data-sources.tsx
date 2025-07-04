@@ -141,24 +141,9 @@ function CreateDataSourceModal({
       form.reset();
     },
     onError: (error: any) => {
-      let errorMessage = "An error occurred";
-
-      if (error instanceof Error) {
-        try {
-          // Try to parse JSON error message if it's a JSON string
-          const parsed = JSON.parse(error.message);
-          errorMessage = parsed.message || error.message;
-        } catch {
-          // If not JSON, use the error message as is
-          errorMessage = error.message;
-        }
-      } else if (error?.message) {
-        errorMessage = error.message;
-      }
-
       toast({
         title: "Error",
-        description: errorMessage,
+        description: error instanceof Error ? error.message : "An error occurred",
         variant: "destructive",
       });
     },
@@ -344,24 +329,9 @@ export default function DataSources() {
       setDeletingSource(null);
     },
     onError: (error: any) => {
-      let errorMessage = "An error occurred";
-
-      if (error instanceof Error) {
-        try {
-          // Try to parse JSON error message if it's a JSON string
-          const parsed = JSON.parse(error.message);
-          errorMessage = parsed.message || error.message;
-        } catch {
-          // If not JSON, use the error message as is
-          errorMessage = error.message;
-        }
-      } else if (error?.message) {
-        errorMessage = error.message;
-      }
-
       toast({
         title: "Error",
-        description: errorMessage,
+        description: error instanceof Error ? error.message : "An error occurred",
         variant: "destructive",
       });
     },
