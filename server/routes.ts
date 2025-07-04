@@ -757,6 +757,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/cross-references/:id", authenticateToken, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
+
+      // Check if there are any mappings associated with this cross reference
+      const associatedMappings = await storage.getCrossReferenceMappings(id);
+      if (associatedMappings.length > 0) {
+        return res.status(400).json({ 
+          message: "This cross reference can not be deleted since it has mappings" 
+        });
+      }
+
       await storage.deleteCrossReference(id);
       res.json({ message: "Cross reference deleted successfully" });
     } catch (error) {
