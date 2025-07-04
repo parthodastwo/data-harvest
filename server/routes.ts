@@ -591,6 +591,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const id = parseInt(req.params.id);
+
+      // Check if there are any attributes associated with this data source
+      const associatedAttributes = await storage.getDataSourceAttributes(id);
+      if (associatedAttributes.length > 0) {
+        return res.status(400).json({ 
+          message: "This Data source can not be deleted since it has attributes" 
+        });
+      }
+
       await storage.deleteDataSource(id);
       res.json({ message: "Data source deleted successfully" });
     } catch (error) {
