@@ -263,33 +263,35 @@ export default function DataMapping() {
                 <p className="text-muted-foreground">No SRCM canonical attributes found</p>
               </div>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>SRCM Attribute</TableHead>
-                    <TableHead>Source Data Source</TableHead>
-                    <TableHead>Source Attribute</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {mappingRows.map((row, index) => (
-                    <MappingTableRow
-                      key={row.srcmCanonicalId}
-                      row={row}
-                      index={index}
-                      activeDataSources={activeDataSources}
-                      editingRow={editingRow}
-                      onEdit={() => handleEditRow(index)}
-                      onSave={() => handleSaveRow(index)}
-                      onCancel={() => handleCancelEdit(index)}
-                      onDelete={() => handleDeleteRow(index)}
-                      onUpdateField={updateRowField}
-                      getDataSourceAttributes={getDataSourceAttributes}
-                    />
-                  ))}
-                </TableBody>
-              </Table>
+              <div className="max-h-[60vh] overflow-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>SRCM Attribute</TableHead>
+                      <TableHead>Source Data Source</TableHead>
+                      <TableHead>Source Attribute</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {mappingRows.map((row, index) => (
+                      <MappingTableRow
+                        key={row.srcmCanonicalId}
+                        row={row}
+                        index={index}
+                        activeDataSources={activeDataSources}
+                        editingRow={editingRow}
+                        onEdit={() => handleEditRow(index)}
+                        onSave={() => handleSaveRow(index)}
+                        onCancel={() => handleCancelEdit(index)}
+                        onDelete={() => handleDeleteRow(index)}
+                        onUpdateField={updateRowField}
+                        getDataSourceAttributes={getDataSourceAttributes}
+                      />
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             )}
           </CardContent>
         </Card>
