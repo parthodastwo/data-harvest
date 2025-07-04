@@ -28,6 +28,7 @@ export interface IStorage {
   // Data System methods
   getAllDataSystems(): Promise<DataSystem[]>;
   getDataSystem(id: number): Promise<DataSystem | undefined>;
+  getDataSystemByName(name: string): Promise<DataSystem | undefined>;
   createDataSystem(dataSystem: InsertDataSystem): Promise<DataSystem>;
   updateDataSystem(id: number, dataSystem: Partial<InsertDataSystem>): Promise<DataSystem>;
   deleteDataSystem(id: number): Promise<void>;
@@ -171,6 +172,11 @@ export class DatabaseStorage implements IStorage {
 
   async getDataSystem(id: number): Promise<DataSystem | undefined> {
     const [dataSystem] = await db.select().from(dataSystems).where(eq(dataSystems.id, id));
+    return dataSystem || undefined;
+  }
+
+  async getDataSystemByName(name: string): Promise<DataSystem | undefined> {
+    const [dataSystem] = await db.select().from(dataSystems).where(eq(dataSystems.name, name));
     return dataSystem || undefined;
   }
 
