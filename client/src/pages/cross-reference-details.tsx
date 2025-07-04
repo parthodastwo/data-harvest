@@ -320,7 +320,7 @@ export default function CrossReferenceDetails() {
 
   // Extract cross reference ID from URL
   const crossReferenceId = parseInt(location.split("/").pop() || "0");
-  
+
   console.log("Cross Reference Details - ID:", crossReferenceId, "Location:", location);
 
   const { data: crossReference, isLoading: crossReferenceLoading } = useQuery<CrossReference>({
