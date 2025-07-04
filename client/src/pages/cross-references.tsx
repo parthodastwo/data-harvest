@@ -108,17 +108,7 @@ function CreateCrossReferenceModal({ isOpen, onClose, editingCrossReference }: C
           </DialogTitle>
         </DialogHeader>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="name">Name *</Label>
-            <Input
-              id="name"
-              {...form.register("name")}
-              placeholder="Enter cross reference name"
-            />
-            {form.formState.errors.name && (
-              <p className="text-sm text-red-600">{form.formState.errors.name.message}</p>
-            )}
-          </div>
+
 
           <div className="space-y-2">
             <Label htmlFor="dataSystemId">Data System *</Label>
@@ -141,6 +131,20 @@ function CreateCrossReferenceModal({ isOpen, onClose, editingCrossReference }: C
               <p className="text-sm text-red-600">{form.formState.errors.dataSystemId.message}</p>
             )}
           </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="name">Name *</Label>
+            <Input
+              id="name"
+              {...form.register("name")}
+              placeholder="Enter cross reference name"
+            />
+            {form.formState.errors.name && (
+              <p className="text-sm text-red-600">{form.formState.errors.name.message}</p>
+            )}
+          </div>
+
+         
 
           <div className="space-y-2">
             <Label htmlFor="isActive">Status</Label>
