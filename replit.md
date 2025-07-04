@@ -121,6 +121,7 @@ Changelog:
 - July 03, 2025. Implemented Cross Reference details page with master-details layout and mapping management functionality
 - July 03, 2025. Added validation to prevent mapping source and target data sources to the same data source
 - July 05, 2025. Added Data Extraction feature with data system selection, dynamic CSV upload fields based on active data sources, and secure file upload functionality with authentication
+- July 05, 2025. Implemented Extract button with cross-reference data processing - reads master CSV files, processes cross-reference mappings, joins data from reference sources, and generates downloadable CSV with datasourcename.attributename column format
 
 ## User Preferences
 

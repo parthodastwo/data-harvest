@@ -3,6 +3,8 @@ import { createServer, type Server } from "http";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
+import { parse } from "csv-parse";
+import { stringify } from "csv-stringify";
 import { storage } from "./storage";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
@@ -795,7 +797,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       },
       filename: (req, file, cb) => {
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        cb(null, `${uniqueSuffix}-${file.originalname}`);
+        const dataSourceId = req.body.dataSourceId;
+        cb(null, `${uniqueSuffix}-${dataSourceId}-${file.originalname}`);
       }
     }),
     fileFilter: (req, file, cb) => {
@@ -854,6 +857,184 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "File upload failed" });
     }
   });
+
+  // Data Extraction processing endpoint
+  app.post("/api/data-extraction/extract", authenticateToken, async (req: any, res) => {
+    try {
+      const { dataSystemId } = req.body;
+      
+      if (!dataSystemId) {
+        return res.status(400).json({ message: "Data system ID is required" });
+      }
+
+      // Get all data sources for this data system
+      const dataSources = await storage.getDataSourcesBySystem(dataSystemId);
+      const masterDataSources = dataSources.filter(ds => ds.activeFlag && ds.isMaster);
+      
+      if (masterDataSources.length === 0) {
+        return res.status(400).json({ message: "No master data sources found" });
+      }
+
+      // Get all cross references
+      const crossReferences = await storage.getAllCrossReferences();
+      
+      // Process each master data source
+      const extractedData: any[] = [];
+      
+      for (const masterDataSource of masterDataSources) {
+        // Find the uploaded file for this master data source
+        const uploadedFiles = fs.readdirSync(uploadDir);
+        const masterFile = uploadedFiles.find(file => 
+          file.includes(`-${masterDataSource.id}-`) && file.endsWith('.csv')
+        );
+        
+        if (!masterFile) {
+          console.log(`No uploaded file found for master data source: ${masterDataSource.name}`);
+          continue;
+        }
+
+        // Read master CSV data
+        const masterFilePath = path.join(uploadDir, masterFile);
+        const masterCsvData = await readCSVFile(masterFilePath);
+        
+        if (masterCsvData.length === 0) {
+          console.log(`No data found in master file: ${masterFile}`);
+          continue;
+        }
+
+        // Get master data source attributes
+        const masterAttributes = await storage.getDataSourceAttributes(masterDataSource.id);
+        
+        // Process each row in master data
+        for (const masterRow of masterCsvData) {
+          const outputRow: any = {};
+          
+          // Add master data source columns
+          for (const attr of masterAttributes) {
+            const columnName = `${masterDataSource.name}.${attr.name}`;
+            outputRow[columnName] = masterRow[attr.name] || '';
+          }
+          
+          // Find cross references where this master data source is the source
+          const relevantCrossRefs = crossReferences.filter(cr => 
+            dataSources.some(ds => ds.id === cr.dataSystemId && ds.id === masterDataSource.dataSystemId)
+          );
+          
+          for (const crossRef of relevantCrossRefs) {
+            // Get cross reference mappings
+            const mappings = await storage.getCrossReferenceMappings(crossRef.id);
+            
+            for (const mapping of mappings) {
+              // Get source and target data sources
+              const sourceDataSource = dataSources.find(ds => ds.id === mapping.sourceDataSourceId);
+              const targetDataSource = dataSources.find(ds => ds.id === mapping.targetDataSourceId);
+              
+              if (!sourceDataSource || !targetDataSource) continue;
+              
+              // Only process if the master data source is the source
+              if (sourceDataSource.id === masterDataSource.id) {
+                // Get target data source attributes
+                const targetAttributes = await storage.getDataSourceAttributes(targetDataSource.id);
+                
+                // Find the uploaded file for target data source
+                const targetFile = uploadedFiles.find(file => 
+                  file.includes(`-${targetDataSource.id}-`) && file.endsWith('.csv')
+                );
+                
+                if (!targetFile) continue;
+                
+                // Read target CSV data
+                const targetFilePath = path.join(uploadDir, targetFile);
+                const targetCsvData = await readCSVFile(targetFilePath);
+                
+                // Get mapping attributes
+                const sourceAttr = masterAttributes.find(attr => attr.id === mapping.sourceAttributeId);
+                const targetAttr = targetAttributes.find(attr => attr.id === mapping.targetAttributeId);
+                
+                if (!sourceAttr || !targetAttr) continue;
+                
+                // Find matching rows in target data based on cross reference mapping
+                const masterValue = masterRow[sourceAttr.name];
+                const matchingTargetRows = targetCsvData.filter(targetRow => 
+                  targetRow[targetAttr.name] === masterValue
+                );
+                
+                // Add target data source columns for matching rows
+                for (const targetRow of matchingTargetRows) {
+                  for (const attr of targetAttributes) {
+                    const columnName = `${targetDataSource.name}.${attr.name}`;
+                    outputRow[columnName] = targetRow[attr.name] || '';
+                  }
+                }
+              }
+            }
+          }
+          
+          extractedData.push(outputRow);
+        }
+      }
+      
+      if (extractedData.length === 0) {
+        return res.status(400).json({ message: "No data extracted" });
+      }
+      
+      // Generate CSV output
+      const csvOutput = await generateCSVOutput(extractedData);
+      
+      // Set response headers for file download
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', `attachment; filename="extracted_data_${new Date().toISOString().split('T')[0]}.csv"`);
+      
+      res.send(csvOutput);
+      
+    } catch (error) {
+      console.error("Data extraction error:", error);
+      res.status(500).json({ message: "Data extraction failed" });
+    }
+  });
+
+  // Helper function to read CSV file
+  async function readCSVFile(filePath: string): Promise<any[]> {
+    return new Promise((resolve, reject) => {
+      const results: any[] = [];
+      
+      fs.createReadStream(filePath)
+        .pipe(parse({
+          columns: true,
+          skip_empty_lines: true,
+          trim: true
+        }))
+        .on('data', (data) => results.push(data))
+        .on('end', () => resolve(results))
+        .on('error', reject);
+    });
+  }
+
+  // Helper function to generate CSV output
+  async function generateCSVOutput(data: any[]): Promise<string> {
+    return new Promise((resolve, reject) => {
+      if (data.length === 0) {
+        resolve('');
+        return;
+      }
+      
+      // Get all unique column names
+      const allColumns = new Set<string>();
+      data.forEach(row => {
+        Object.keys(row).forEach(key => allColumns.add(key));
+      });
+      
+      const columns = Array.from(allColumns).sort();
+      
+      stringify(data, {
+        header: true,
+        columns: columns
+      }, (err, output) => {
+        if (err) reject(err);
+        else resolve(output);
+      });
+    });
+  }
 
   const httpServer = createServer(app);
   return httpServer;

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { Upload, FileText, CheckCircle } from "lucide-react";
+import { Upload, FileText, CheckCircle, Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { tokenStorage } from "@/lib/auth";
@@ -143,6 +143,61 @@ export default function DataExtraction() {
   const activeDataSources = dataSources?.filter(ds => ds.activeFlag) || [];
   const hasAnyFiles = fileUploads.some(u => u.file);
   const allUploaded = fileUploads.length > 0 && fileUploads.every(u => !u.file || u.uploaded);
+
+  // Check if at least one master data source file is uploaded
+  const hasMasterDataSourceUploaded = () => {
+    if (!dataSources) return false;
+    
+    const masterDataSources = dataSources.filter(ds => ds.activeFlag && ds.isMaster);
+    return masterDataSources.some(ds => 
+      fileUploads.some(upload => upload.dataSourceId === ds.id && upload.uploaded)
+    );
+  };
+
+  const handleExtract = async () => {
+    if (!selectedDataSystemId) return;
+
+    try {
+      const token = tokenStorage.get();
+      const response = await fetch('/api/data-extraction/extract', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          dataSystemId: selectedDataSystemId,
+        }),
+      });
+
+      if (response.ok) {
+        // Handle file download
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `extracted_data_${new Date().toISOString().split('T')[0]}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+
+        toast({
+          title: "Success",
+          description: "Data extraction completed and file downloaded successfully",
+        });
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Extraction failed');
+      }
+    } catch (error) {
+      toast({
+        title: "Extraction Failed",
+        description: error instanceof Error ? error.message : "Failed to extract data. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
 
   if (dataSystemsLoading) {
     return (
@@ -290,6 +345,30 @@ export default function DataExtraction() {
             <p className="text-center text-muted-foreground">
               No active data sources found in this data system
             </p>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Extract Button - Only show when data sources are loaded */}
+      {selectedDataSystemId > 0 && !dataSourcesLoading && activeDataSources.length > 0 && (
+        <Card>
+          <CardContent className="py-6">
+            <div className="flex justify-center">
+              <Button
+                onClick={handleExtract}
+                disabled={!hasMasterDataSourceUploaded()}
+                size="lg"
+                className="px-8"
+              >
+                <Download className="h-5 w-5 mr-2" />
+                Extract Data
+              </Button>
+            </div>
+            {!hasMasterDataSourceUploaded() && (
+              <p className="text-center text-sm text-muted-foreground mt-2">
+                Upload at least one master data source file to enable extraction
+              </p>
+            )}
           </CardContent>
         </Card>
       )}
