@@ -102,7 +102,7 @@ function CreateMappingModal({ isOpen, onClose, crossReferenceId, editingMapping 
     enabled: isOpen && !!form.watch("sourceDataSourceId") && form.watch("sourceDataSourceId") > 0,
   });
 
-  const { data: targetAttributes } = useQuery<DataSourceAttribute[]>({
+  const { data: targetAttributes, refetch: refetchTargetAttributes } = useQuery<DataSourceAttribute[]>({
     queryKey: ["/api/data-sources", form.watch("targetDataSourceId"), "attributes"],
     queryFn: async () => {
       const targetId = form.watch("targetDataSourceId");
@@ -113,6 +113,14 @@ function CreateMappingModal({ isOpen, onClose, crossReferenceId, editingMapping 
     },
     enabled: isOpen && !!form.watch("targetDataSourceId") && form.watch("targetDataSourceId") > 0,
   });
+
+  // Force refetch target attributes when target data source changes
+  useEffect(() => {
+    const targetDataSourceId = form.watch("targetDataSourceId");
+    if (targetDataSourceId && targetDataSourceId > 0) {
+      refetchTargetAttributes();
+    }
+  }, [form.watch("targetDataSourceId"), refetchTargetAttributes]);
 
   const createMutation = useMutation({
     mutationFn: async (data: z.infer<typeof createMappingSchema>) => {
