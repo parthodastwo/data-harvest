@@ -972,7 +972,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const attr = masterAttributes.find(a => a.name === csvColumn);
             if (attr) {
               const columnName = `${masterDataSource.name}.${attr.name}`;
-              outputRow[columnName] = masterRow[attr.name] || '';
+              const rawValue = masterRow[attr.name] || '';
+              outputRow[columnName] = formatAttributeValue(rawValue, attr);
             }
           }
           
@@ -1038,7 +1039,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     const attr = targetAttributes.find(a => a.name === csvColumn);
                     if (attr) {
                       const columnName = `${targetDataSource.name}.${attr.name}`;
-                      outputRow[columnName] = targetRow[attr.name] || '';
+                      const rawValue = targetRow[attr.name] || '';
+                      outputRow[columnName] = formatAttributeValue(rawValue, attr);
                     }
                   }
                   console.log(`Added ${targetCsvColumns.length} columns from ${targetDataSource.name}`);
@@ -1069,6 +1071,108 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Data extraction failed" });
     }
   });
+
+  // Helper function to format attribute values based on their format
+  function formatAttributeValue(value: string, attribute: any): string {
+    if (!value || !value.trim()) {
+      return '';
+    }
+
+    const trimmedValue = value.trim();
+    
+    // If no format specified, return as-is
+    if (!attribute.format || !attribute.dataType) {
+      return trimmedValue;
+    }
+
+    // Handle date formatting
+    if (attribute.dataType === 'date' && attribute.format) {
+      try {
+        const date = parseDate(trimmedValue);
+        if (date) {
+          return formatDate(date, attribute.format);
+        }
+      } catch (error) {
+        console.log(`Error formatting date value "${trimmedValue}" with format "${attribute.format}":`, error);
+      }
+    }
+
+    // For other data types, return as-is for now
+    return trimmedValue;
+  }
+
+  // Helper function to parse date from various input formats
+  function parseDate(dateString: string): Date | null {
+    if (!dateString) return null;
+
+    // Try common date formats
+    const formats = [
+      /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/,  // MM/DD/YYYY or M/D/YYYY
+      /^(\d{4})-(\d{2})-(\d{2})$/,        // YYYY-MM-DD
+      /^(\d{2})-(\d{2})-(\d{4})$/,        // MM-DD-YYYY
+      /^(\d{1,2})-(\d{1,2})-(\d{4})$/,    // M-D-YYYY
+    ];
+
+    // Try MM/DD/YYYY format
+    const mmddyyyy = dateString.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if (mmddyyyy) {
+      const month = parseInt(mmddyyyy[1]) - 1; // JS months are 0-based
+      const day = parseInt(mmddyyyy[2]);
+      const year = parseInt(mmddyyyy[3]);
+      return new Date(year, month, day);
+    }
+
+    // Try YYYY-MM-DD format
+    const yyyymmdd = dateString.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (yyyymmdd) {
+      const year = parseInt(yyyymmdd[1]);
+      const month = parseInt(yyyymmdd[2]) - 1;
+      const day = parseInt(yyyymmdd[3]);
+      return new Date(year, month, day);
+    }
+
+    // Try MM-DD-YYYY format
+    const mmddyyyy2 = dateString.match(/^(\d{1,2})-(\d{1,2})-(\d{4})$/);
+    if (mmddyyyy2) {
+      const month = parseInt(mmddyyyy2[1]) - 1;
+      const day = parseInt(mmddyyyy2[2]);
+      const year = parseInt(mmddyyyy2[3]);
+      return new Date(year, month, day);
+    }
+
+    return null;
+  }
+
+  // Helper function to format date according to specified format
+  function formatDate(date: Date, format: string): string {
+    const day = date.getDate();
+    const month = date.getMonth() + 1; // JS months are 0-based
+    const year = date.getFullYear();
+
+    const padZero = (num: number, length: number = 2): string => {
+      return num.toString().padStart(length, '0');
+    };
+
+    switch (format.toUpperCase()) {
+      case 'DD/MM/YYYY':
+        return `${padZero(day)}/${padZero(month)}/${year}`;
+      case 'MM/DD/YYYY':
+        return `${padZero(month)}/${padZero(day)}/${year}`;
+      case 'YYYY-MM-DD':
+        return `${year}-${padZero(month)}-${padZero(day)}`;
+      case 'MM-DD-YYYY':
+        return `${padZero(month)}-${padZero(day)}-${year}`;
+      case 'DD-MM-YYYY':
+        return `${padZero(day)}-${padZero(month)}-${year}`;
+      case 'M/D/YYYY':
+        return `${month}/${day}/${year}`;
+      case 'D/M/YYYY':
+        return `${day}/${month}/${year}`;
+      default:
+        // If format not recognized, return as MM/DD/YYYY
+        return `${padZero(month)}/${padZero(day)}/${year}`;
+    }
+  }
 
   // Helper function to read CSV file with column order preservation
   async function readCSVFile(filePath: string): Promise<{ data: any[], columns: string[] }> {
