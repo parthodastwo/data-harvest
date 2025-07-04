@@ -956,15 +956,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Get master data source attributes
         const masterAttributes = await storage.getDataSourceAttributes(masterDataSource.id);
 
-        // First, determine all column names in the correct order
-        const allColumnNames: string[] = [];
+        // Get all data mappings for this data system
+        const dataMappings = await storage.getDataMappingsBySystem(dataSystemId);
 
-        // Add master data source column names first - preserve CSV column order
+        // First, determine all column names in the correct order based on mappings
+        const allColumnNames: string[] = [];
+        const columnMappings = new Map<string, string>(); // original attribute key -> canonical name
+
+        // Add master data source column names first - preserve CSV column order, but only if mapped
         for (const csvColumn of masterCsvColumns) {
           const attr = masterAttributes.find(a => a.name === csvColumn);
           if (attr) {
-            const columnName = `${masterDataSource.name}.${attr.name}`;
-            allColumnNames.push(columnName);
+            const originalKey = `${masterDataSource.name}.${attr.name}`;
+            const mapping = dataMappings.find(m => 
+              m.sourceDataSourceId === masterDataSource.id && 
+              m.sourceAttributeId === attr.id
+            );
+            if (mapping && mapping.srcmCanonicalName) {
+              allColumnNames.push(mapping.srcmCanonicalName);
+              columnMappings.set(originalKey, mapping.srcmCanonicalName);
+            }
           }
         }
 
@@ -989,13 +1000,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 const targetCsvResult = await readCSVFile(targetFilePath);
                 const targetCsvColumns = targetCsvResult.columns;
 
-                // Add target data source column names - preserve CSV column order
+                // Add target data source column names - preserve CSV column order, but only if mapped
                 for (const csvColumn of targetCsvColumns) {
                   const attr = targetAttributes.find(a => a.name === csvColumn);
                   if (attr) {
-                    const columnName = `${targetDataSource.name}.${attr.name}`;
-                    if (!allColumnNames.includes(columnName)) {
-                      allColumnNames.push(columnName);
+                    const originalKey = `${targetDataSource.name}.${attr.name}`;
+                    const dataMapping = dataMappings.find(m => 
+                      m.sourceDataSourceId === targetDataSource.id && 
+                      m.sourceAttributeId === attr.id
+                    );
+                    if (dataMapping && dataMapping.srcmCanonicalName) {
+                      if (!allColumnNames.includes(dataMapping.srcmCanonicalName)) {
+                        allColumnNames.push(dataMapping.srcmCanonicalName);
+                      }
+                      columnMappings.set(originalKey, dataMapping.srcmCanonicalName);
                     }
                   }
                 }
@@ -1013,13 +1031,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
             outputRow[columnName] = '';
           }
 
-          // Add master data source columns - preserve CSV column order
+          // Add master data source columns - preserve CSV column order, use canonical names
           for (const csvColumn of masterCsvColumns) {
             const attr = masterAttributes.find(a => a.name === csvColumn);
             if (attr) {
-              const columnName = `${masterDataSource.name}.${attr.name}`;
-              const rawValue = masterRow[attr.name] || '';
-              outputRow[columnName] = formatAttributeValue(rawValue, attr);
+              const originalKey = `${masterDataSource.name}.${attr.name}`;
+              const canonicalName = columnMappings.get(originalKey);
+              if (canonicalName) {
+                const rawValue = masterRow[attr.name] || '';
+                outputRow[canonicalName] = formatAttributeValue(rawValue, attr);
+              }
             }
           }
 
@@ -1080,16 +1101,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
                 if (matchingTargetRows.length > 0) {
                   const targetRow = matchingTargetRows[0];
-                  // Add target columns in CSV order
+                  // Add target columns in CSV order, use canonical names
                   for (const csvColumn of targetCsvColumns) {
                     const attr = targetAttributes.find(a => a.name === csvColumn);
                     if (attr) {
-                      const columnName = `${targetDataSource.name}.${attr.name}`;
-                      const rawValue = targetRow[attr.name] || '';
-                      outputRow[columnName] = formatAttributeValue(rawValue, attr);
+                      const originalKey = `${targetDataSource.name}.${attr.name}`;
+                      const canonicalName = columnMappings.get(originalKey);
+                      if (canonicalName) {
+                        const rawValue = targetRow[attr.name] || '';
+                        outputRow[canonicalName] = formatAttributeValue(rawValue, attr);
+                      }
                     }
                   }
-                  console.log(`Added ${targetCsvColumns.length} columns from ${targetDataSource.name}`);
+                  console.log(`Added mapped columns from ${targetDataSource.name}`);
                 }
               }
             }
