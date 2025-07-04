@@ -14,6 +14,7 @@ import DataSources from "@/pages/data-sources";
 import DataSourceDetails from "@/pages/data-source-details";
 import CrossReferences from "@/pages/cross-references";
 import CrossReferenceDetails from "@/pages/cross-reference-details";
+import DataExtraction from "@/pages/data-extraction";
 import NotFound from "@/pages/not-found";
 
 function AuthenticatedRoute({ component: Component, ...props }: any) {
@@ -64,6 +65,9 @@ function Router() {
       </Route>
       <Route path="/cross-references/:id">
         {(params) => <AuthenticatedRoute component={CrossReferenceDetails} {...params} />}
+      </Route>
+      <Route path="/data-extraction">
+        {(params) => <AuthenticatedRoute component={DataExtraction} {...params} />}
       </Route>
       <Route component={NotFound} />
     </Switch>

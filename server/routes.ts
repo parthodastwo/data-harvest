@@ -1,5 +1,8 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
+import multer from "multer";
+import path from "path";
+import fs from "fs";
 import { storage } from "./storage";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
@@ -776,6 +779,79 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Delete cross reference mapping error:", error);
       res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Configure multer for file uploads
+  const uploadDir = path.join(process.cwd(), 'uploads');
+  if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+  }
+
+  const upload = multer({
+    storage: multer.diskStorage({
+      destination: (req, file, cb) => {
+        cb(null, uploadDir);
+      },
+      filename: (req, file, cb) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, `${uniqueSuffix}-${file.originalname}`);
+      }
+    }),
+    fileFilter: (req, file, cb) => {
+      if (file.mimetype === 'text/csv' || file.originalname.toLowerCase().endsWith('.csv')) {
+        cb(null, true);
+      } else {
+        cb(new Error('Only CSV files are allowed'));
+      }
+    },
+    limits: {
+      fileSize: 10 * 1024 * 1024, // 10MB limit
+    }
+  });
+
+  // Data Extraction file upload endpoint
+  app.post("/api/data-extraction/upload", authenticateToken, upload.single('file'), async (req: any, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "No file uploaded" });
+      }
+
+      const dataSourceId = parseInt(req.body.dataSourceId);
+      if (!dataSourceId) {
+        return res.status(400).json({ message: "Data source ID is required" });
+      }
+
+      // Verify the data source exists
+      const dataSource = await storage.getDataSource(dataSourceId);
+      if (!dataSource) {
+        return res.status(404).json({ message: "Data source not found" });
+      }
+
+      // Store file info (you can extend this to store in database if needed)
+      const fileInfo = {
+        originalName: req.file.originalname,
+        filename: req.file.filename,
+        path: req.file.path,
+        size: req.file.size,
+        dataSourceId: dataSourceId,
+        uploadedAt: new Date(),
+        uploadedBy: req.user.id
+      };
+
+      console.log("File uploaded:", fileInfo);
+
+      res.json({ 
+        message: "File uploaded successfully",
+        file: {
+          originalName: req.file.originalname,
+          size: req.file.size,
+          dataSourceId: dataSourceId
+        }
+      });
+    } catch (error) {
+      console.error("File upload error:", error);
+      res.status(500).json({ message: "File upload failed" });
     }
   });
 

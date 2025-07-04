@@ -4,14 +4,48 @@ import { Plus, Edit, Trash2, Eye } from "lucide-react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { useForm } from "react-hook-form";
@@ -25,16 +59,28 @@ interface CreateDataSourceModalProps {
   editingSource?: DataSource | null;
 }
 
-function CreateDataSourceModal({ isOpen, onClose, editingSource }: CreateDataSourceModalProps) {
+function CreateDataSourceModal({
+  isOpen,
+  onClose,
+  editingSource,
+}: CreateDataSourceModalProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  
+
   const form = useForm<InsertDataSource>({
-    resolver: zodResolver(insertDataSourceSchema.extend({
-      name: insertDataSourceSchema.shape.name.min(1, "Name is required"),
-      filename: insertDataSourceSchema.shape.filename.min(1, "Filename is required"),
-      dataSystemId: insertDataSourceSchema.shape.dataSystemId.min(1, "Data system is required"),
-    })),
+    resolver: zodResolver(
+      insertDataSourceSchema.extend({
+        name: insertDataSourceSchema.shape.name.min(1, "Name is required"),
+        filename: insertDataSourceSchema.shape.filename.min(
+          1,
+          "Filename is required",
+        ),
+        dataSystemId: insertDataSourceSchema.shape.dataSystemId.min(
+          1,
+          "Data system is required",
+        ),
+      }),
+    ),
     defaultValues: {
       dataSystemId: 0,
       name: "",
@@ -55,7 +101,6 @@ function CreateDataSourceModal({ isOpen, onClose, editingSource }: CreateDataSou
         filename: editingSource.filename,
         activeFlag: editingSource.activeFlag,
         isMaster: editingSource.isMaster,
-
       });
     } else {
       form.reset({
@@ -65,7 +110,6 @@ function CreateDataSourceModal({ isOpen, onClose, editingSource }: CreateDataSou
         filename: "",
         activeFlag: true,
         isMaster: false,
-
       });
     }
   }, [editingSource, form]);
@@ -75,7 +119,7 @@ function CreateDataSourceModal({ isOpen, onClose, editingSource }: CreateDataSou
   });
 
   // Filter active data systems for the dropdown
-  const activeDataSystems = dataSystems.filter(system => system.isActive);
+  const activeDataSystems = dataSystems.filter((system) => system.isActive);
 
   const createSourceMutation = useMutation({
     mutationFn: async (data: InsertDataSource) => {
@@ -89,7 +133,9 @@ function CreateDataSourceModal({ isOpen, onClose, editingSource }: CreateDataSou
       queryClient.invalidateQueries({ queryKey: ["/api/data-sources"] });
       toast({
         title: "Success",
-        description: editingSource ? "Data source updated successfully" : "Data source created successfully",
+        description: editingSource
+          ? "Data source updated successfully"
+          : "Data source created successfully",
       });
       onClose();
       form.reset();
@@ -97,7 +143,8 @@ function CreateDataSourceModal({ isOpen, onClose, editingSource }: CreateDataSou
     onError: (error) => {
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "An error occurred",
+        description:
+          error instanceof Error ? error.message : "An error occurred",
         variant: "destructive",
       });
     },
@@ -111,7 +158,9 @@ function CreateDataSourceModal({ isOpen, onClose, editingSource }: CreateDataSou
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>{editingSource ? "Edit Data Source" : "Create New Data Source"}</DialogTitle>
+          <DialogTitle>
+            {editingSource ? "Edit Data Source" : "Create New Data Source"}
+          </DialogTitle>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -121,7 +170,10 @@ function CreateDataSourceModal({ isOpen, onClose, editingSource }: CreateDataSou
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Data System</FormLabel>
-                  <Select value={field.value?.toString()} onValueChange={(value) => field.onChange(Number(value))}>
+                  <Select
+                    value={field.value?.toString()}
+                    onValueChange={(value) => field.onChange(Number(value))}
+                  >
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Select a data system" />
@@ -129,7 +181,10 @@ function CreateDataSourceModal({ isOpen, onClose, editingSource }: CreateDataSou
                     </FormControl>
                     <SelectContent>
                       {activeDataSystems.map((system) => (
-                        <SelectItem key={system.id} value={system.id.toString()}>
+                        <SelectItem
+                          key={system.id}
+                          value={system.id.toString()}
+                        >
                           {system.name}
                         </SelectItem>
                       ))}
@@ -159,7 +214,11 @@ function CreateDataSourceModal({ isOpen, onClose, editingSource }: CreateDataSou
                 <FormItem>
                   <FormLabel>Description</FormLabel>
                   <FormControl>
-                    <Textarea placeholder="Enter description (optional)" {...field} value={field.value || ""} />
+                    <Textarea
+                      placeholder="Enter description (optional)"
+                      {...field}
+                      value={field.value || ""}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -186,7 +245,7 @@ function CreateDataSourceModal({ isOpen, onClose, editingSource }: CreateDataSou
                 render={({ field }) => (
                   <FormItem className="flex flex-row items-start space-x-3 space-y-0">
                     <FormControl>
-                      <Checkbox 
+                      <Checkbox
                         checked={field.value}
                         onCheckedChange={field.onChange}
                       />
@@ -207,7 +266,7 @@ function CreateDataSourceModal({ isOpen, onClose, editingSource }: CreateDataSou
                 render={({ field }) => (
                   <FormItem className="flex flex-row items-start space-x-3 space-y-0">
                     <FormControl>
-                      <Checkbox 
+                      <Checkbox
                         checked={field.value}
                         onCheckedChange={field.onChange}
                       />
@@ -228,7 +287,11 @@ function CreateDataSourceModal({ isOpen, onClose, editingSource }: CreateDataSou
                 Cancel
               </Button>
               <Button type="submit" disabled={createSourceMutation.isPending}>
-                {createSourceMutation.isPending ? "Saving..." : editingSource ? "Update" : "Create"}
+                {createSourceMutation.isPending
+                  ? "Saving..."
+                  : editingSource
+                    ? "Update"
+                    : "Create"}
               </Button>
             </div>
           </form>
@@ -269,7 +332,8 @@ export default function DataSources() {
     onError: (error) => {
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "An error occurred",
+        description:
+          error instanceof Error ? error.message : "An error occurred",
         variant: "destructive",
       });
     },
@@ -294,7 +358,7 @@ export default function DataSources() {
   };
 
   const getDataSystemName = (dataSystemId: number) => {
-    const system = dataSystems.find(s => s.id === dataSystemId);
+    const system = dataSystems.find((s) => s.id === dataSystemId);
     return system?.name || "Unknown";
   };
 
@@ -318,7 +382,10 @@ export default function DataSources() {
             Manage data sources for your healthcare systems
           </p>
         </div>
-        <Button onClick={() => setCreateModalOpen(true)} className="flex items-center gap-2">
+        <Button
+          onClick={() => setCreateModalOpen(true)}
+          className="flex items-center gap-2"
+        >
           <Plus className="h-4 w-4" />
           Create Data Source
         </Button>
@@ -330,11 +397,17 @@ export default function DataSources() {
             <div className="flex h-20 w-20 items-center justify-center rounded-full bg-muted">
               <Plus className="h-10 w-10 text-muted-foreground" />
             </div>
-            <h3 className="mt-4 text-lg font-semibold">No data sources available</h3>
+            <h3 className="mt-4 text-lg font-semibold">
+              No data sources available
+            </h3>
             <p className="mb-4 mt-2 text-sm text-muted-foreground">
-              You haven't created any data sources yet. Get started by creating your first one.
+              You haven't created any data sources yet. Get started by creating
+              your first one.
             </p>
-            <Button onClick={() => setCreateModalOpen(true)} className="flex items-center gap-2">
+            <Button
+              onClick={() => setCreateModalOpen(true)}
+              className="flex items-center gap-2"
+            >
               <Plus className="h-4 w-4" />
               Create Data Source
             </Button>
@@ -358,11 +431,17 @@ export default function DataSources() {
               {dataSources.map((source: DataSource) => (
                 <TableRow key={source.id}>
                   <TableCell className="font-medium">{source.name}</TableCell>
-                  <TableCell>{getDataSystemName(source.dataSystemId)}</TableCell>
-                  <TableCell>{source.description}</TableCell>
-                  <TableCell className="font-mono text-sm">{source.filename}</TableCell>
                   <TableCell>
-                    <Badge variant={source.activeFlag ? "default" : "secondary"}>
+                    {getDataSystemName(source.dataSystemId)}
+                  </TableCell>
+                  <TableCell>{source.description}</TableCell>
+                  <TableCell className="font-mono text-sm">
+                    {source.filename}
+                  </TableCell>
+                  <TableCell>
+                    <Badge
+                      variant={source.activeFlag ? "default" : "secondary"}
+                    >
                       {source.activeFlag ? "Active" : "Inactive"}
                     </Badge>
                   </TableCell>
@@ -382,7 +461,6 @@ export default function DataSources() {
                         className="flex items-center gap-1"
                       >
                         <Eye className="h-4 w-4" />
-                        Details
                       </Button>
                       <Button
                         variant="outline"
@@ -391,7 +469,6 @@ export default function DataSources() {
                         className="flex items-center gap-1"
                       >
                         <Edit className="h-4 w-4" />
-                        Edit
                       </Button>
                       <Button
                         variant="outline"
@@ -400,7 +477,6 @@ export default function DataSources() {
                         className="flex items-center gap-1"
                       >
                         <Trash2 className="h-4 w-4" />
-                        Delete
                       </Button>
                     </div>
                   </TableCell>
@@ -417,18 +493,24 @@ export default function DataSources() {
         editingSource={editingSource}
       />
 
-      <AlertDialog open={!!deletingSource} onOpenChange={() => setDeletingSource(null)}>
+      <AlertDialog
+        open={!!deletingSource}
+        onOpenChange={() => setDeletingSource(null)}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Data Source</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete "{deletingSource?.name}"? This action cannot be undone.
+              Are you sure you want to delete "{deletingSource?.name}"? This
+              action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              onClick={() => deletingSource && deleteSourceMutation.mutate(deletingSource.id)}
+              onClick={() =>
+                deletingSource && deleteSourceMutation.mutate(deletingSource.id)
+              }
               disabled={deleteSourceMutation.isPending}
             >
               {deleteSourceMutation.isPending ? "Deleting..." : "Delete"}

@@ -120,6 +120,7 @@ Changelog:
 - July 03, 2025. Added Cross References feature with full CRUD operations for managing attribute mappings between data sources
 - July 03, 2025. Implemented Cross Reference details page with master-details layout and mapping management functionality
 - July 03, 2025. Added validation to prevent mapping source and target data sources to the same data source
+- July 05, 2025. Added Data Extraction feature with data system selection, dynamic CSV upload fields based on active data sources, and secure file upload functionality with authentication
 
 ## User Preferences
 

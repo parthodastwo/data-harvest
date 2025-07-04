@@ -274,7 +274,7 @@ export default function DataSystems() {
                         className="flex items-center gap-1"
                       >
                         <Edit className="h-4 w-4" />
-                        Edit
+                        
                       </Button>
                       <Button
                         variant="outline"
@@ -283,7 +283,7 @@ export default function DataSystems() {
                         className="flex items-center gap-1"
                       >
                         <Trash2 className="h-4 w-4" />
-                        Delete
+                        
                       </Button>
                     </div>
                   </TableCell>
