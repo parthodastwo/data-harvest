@@ -1004,95 +1004,78 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
 
+        // Get data mappings for this data system
+        const dataMappings = await storage.getDataMappingsBySystem(dataSystemId);
+
         // Process each row in master data
         for (const masterRow of masterCsvData) {
           const outputRow: any = {};
 
-          // Initialize all columns with empty values in the correct order
-          for (const columnName of allColumnNames) {
-            outputRow[columnName] = '';
-          }
+          // Process data mappings to create canonical attributes
+          for (const mapping of dataMappings) {
+            const canonicalName = mapping.srcmCanonicalName;
+            let value = '';
 
-          // Add master data source columns - preserve CSV column order
-          for (const csvColumn of masterCsvColumns) {
-            const attr = masterAttributes.find(a => a.name === csvColumn);
-            if (attr) {
-              const columnName = `${masterDataSource.name}.${attr.name}`;
-              const rawValue = masterRow[attr.name] || '';
-              outputRow[columnName] = formatAttributeValue(rawValue, attr);
-            }
-          }
-
-          // Process cross references to add reference data
-          for (const crossRef of relevantCrossRefs) {
-            const mappings = await storage.getCrossReferenceMappings(crossRef.id);
-            console.log(`Processing cross reference: ${crossRef.name} with ${mappings.length} mappings`);
-
-            for (const mapping of mappings) {
+            // If there's a mapping to a source attribute, try to get the value
+            if (mapping.sourceDataSourceId && mapping.sourceAttributeId) {
               const sourceDataSource = dataSources.find(ds => ds.id === mapping.sourceDataSourceId);
-              const targetDataSource = dataSources.find(ds => ds.id === mapping.targetDataSourceId);
+              const sourceAttributes = await storage.getDataSourceAttributes(mapping.sourceDataSourceId);
+              const sourceAttribute = sourceAttributes.find(attr => attr.id === mapping.sourceAttributeId);
 
-              if (!sourceDataSource || !targetDataSource) {
-                console.log(`Skipping mapping - source or target data source not found`);
-                continue;
-              }
+              if (sourceDataSource && sourceAttribute) {
+                // Check if this is from the master data source
+                if (sourceDataSource.id === masterDataSource.id) {
+                  // Get value directly from master row
+                  const rawValue = masterRow[sourceAttribute.name] || '';
+                  value = formatAttributeValue(rawValue, sourceAttribute);
+                } else {
+                  // Get value from reference data through cross-reference mappings
+                  const sourceFileName = fileMapping.get(sourceDataSource.id);
+                  
+                  if (sourceFileName) {
+                    const sourceFilePath = path.join(uploadDir, sourceFileName);
+                    const sourceCsvResult = await readCSVFile(sourceFilePath);
+                    const sourceCsvData = sourceCsvResult.data;
 
-              console.log(`Processing mapping: ${sourceDataSource.name} -> ${targetDataSource.name}`);
+                    // Find the matching row through cross-reference mappings
+                    for (const crossRef of relevantCrossRefs) {
+                      const crossRefMappings = await storage.getCrossReferenceMappings(crossRef.id);
+                      
+                      for (const crossMapping of crossRefMappings) {
+                        if (crossMapping.targetDataSourceId === sourceDataSource.id) {
+                          const masterSourceDataSource = dataSources.find(ds => ds.id === crossMapping.sourceDataSourceId);
+                          
+                          if (masterSourceDataSource && masterSourceDataSource.id === masterDataSource.id) {
+                            const masterSourceAttributes = await storage.getDataSourceAttributes(masterSourceDataSource.id);
+                            const masterSourceAttr = masterSourceAttributes.find(attr => attr.id === crossMapping.sourceAttributeId);
+                            
+                            const targetSourceAttributes = await storage.getDataSourceAttributes(sourceDataSource.id);
+                            const targetSourceAttr = targetSourceAttributes.find(attr => attr.id === crossMapping.targetAttributeId);
 
-              // Only process if the master data source is the source
-              if (sourceDataSource.id === masterDataSource.id) {
-                const targetAttributes = await storage.getDataSourceAttributes(targetDataSource.id);
-                const targetFileName = fileMapping.get(targetDataSource.id);
+                            if (masterSourceAttr && targetSourceAttr) {
+                              const masterValue = masterRow[masterSourceAttr.name];
+                              const matchingSourceRows = sourceCsvData.filter(sourceRow => 
+                                sourceRow[targetSourceAttr.name] === masterValue
+                              );
 
-                if (!targetFileName) {
-                  console.log(`No uploaded file found for reference data source: ${targetDataSource.name}`);
-                  continue;
-                }
-
-                console.log(`Found target file: ${targetFileName} for ${targetDataSource.name}`);
-
-                const targetFilePath = path.join(uploadDir, targetFileName);
-                const targetCsvResult = await readCSVFile(targetFilePath);
-                const targetCsvData = targetCsvResult.data;
-                const targetCsvColumns = targetCsvResult.columns;
-
-                if (targetCsvData.length === 0) {
-                  console.log(`No data found in target file: ${targetFileName}`);
-                  continue;
-                }
-
-                const sourceAttr = masterAttributes.find(attr => attr.id === mapping.sourceAttributeId);
-                const targetAttr = targetAttributes.find(attr => attr.id === mapping.targetAttributeId);
-
-                if (!sourceAttr || !targetAttr) {
-                  console.log(`Source or target attribute not found for mapping`);
-                  continue;
-                }
-
-                console.log(`Mapping attributes: ${sourceAttr.name} -> ${targetAttr.name}`);
-
-                const masterValue = masterRow[sourceAttr.name];
-                const matchingTargetRows = targetCsvData.filter(targetRow => 
-                  targetRow[targetAttr.name] === masterValue
-                );
-
-                console.log(`Master value: ${masterValue}, Found ${matchingTargetRows.length} matching rows`);
-
-                if (matchingTargetRows.length > 0) {
-                  const targetRow = matchingTargetRows[0];
-                  // Add target columns in CSV order
-                  for (const csvColumn of targetCsvColumns) {
-                    const attr = targetAttributes.find(a => a.name === csvColumn);
-                    if (attr) {
-                      const columnName = `${targetDataSource.name}.${attr.name}`;
-                      const rawValue = targetRow[attr.name] || '';
-                      outputRow[columnName] = formatAttributeValue(rawValue, attr);
+                              if (matchingSourceRows.length > 0) {
+                                const sourceRow = matchingSourceRows[0];
+                                const rawValue = sourceRow[sourceAttribute.name] || '';
+                                value = formatAttributeValue(rawValue, sourceAttribute);
+                                break;
+                              }
+                            }
+                          }
+                        }
+                      }
+                      if (value) break;
                     }
                   }
-                  console.log(`Added ${targetCsvColumns.length} columns from ${targetDataSource.name}`);
                 }
               }
             }
+
+            outputRow[canonicalName] = value;
           }
 
           extractedData.push(outputRow);
