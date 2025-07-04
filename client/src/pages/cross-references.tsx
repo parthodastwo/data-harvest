@@ -73,6 +73,13 @@ function CreateCrossReferenceModal({ isOpen, onClose, editingCrossReference }: C
       onClose();
       form.reset();
     },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "An error occurred",
+        variant: "destructive",
+      });
+    },
   });
 
   const updateMutation = useMutation({
@@ -88,6 +95,13 @@ function CreateCrossReferenceModal({ isOpen, onClose, editingCrossReference }: C
       });
       onClose();
       form.reset();
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "An error occurred",
+        variant: "destructive",
+      });
     },
   });
 
@@ -202,6 +216,13 @@ export default function CrossReferences() {
         description: "Cross reference deleted successfully",
       });
       setDeletingCrossReference(null);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "An error occurred",
+        variant: "destructive",
+      });
     },
   });
 
