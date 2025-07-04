@@ -42,7 +42,7 @@ export const extractionConfigurations = pgTable("extraction_configurations", {
 
 export const dataSystems = pgTable("data_systems", {
   id: serial("id").primaryKey(),
-  name: text("name").notNull(),
+  name: text("name").notNull().unique(),
   description: text("description"),
   isActive: boolean("is_active").default(true).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),

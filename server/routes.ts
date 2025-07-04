@@ -46,13 +46,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/auth/register", async (req, res) => {
     try {
       const validatedData = registerSchema.parse(req.body);
-      
+
       // Check if user already exists
       const existingUser = await storage.getUserByUsername(validatedData.username);
       if (existingUser) {
         return res.status(400).json({ message: "Username already exists" });
       }
-      
+
       const existingEmail = await storage.getUserByEmail(validatedData.email);
       if (existingEmail) {
         return res.status(400).json({ message: "Email already exists" });
@@ -60,7 +60,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Hash password
       const hashedPassword = await bcrypt.hash(validatedData.password, SALT_ROUNDS);
-      
+
       // Create user
       const user = await storage.createUser({
         username: validatedData.username,
@@ -75,7 +75,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Generate JWT token
       const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '24h' });
-      
+
       // Return user without password
       const { password: _, ...userWithoutPassword } = user;
       res.json({ user: userWithoutPassword, token });
@@ -91,7 +91,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/auth/login", async (req, res) => {
     try {
       const validatedData = loginSchema.parse(req.body);
-      
+
       // Find user
       const user = await storage.getUserByUsername(validatedData.username);
       if (!user) {
@@ -110,7 +110,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Generate JWT token
       const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '24h' });
-      
+
       // Return user without password
       const { password: _, ...userWithoutPassword } = user;
       res.json({ user: userWithoutPassword, token });
@@ -136,10 +136,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Hash new password
       const hashedPassword = await bcrypt.hash(validatedData.newPassword, SALT_ROUNDS);
-      
+
       // Update password
       await storage.updateUserPassword(user.id, hashedPassword);
-      
+
       res.json({ message: "Password updated successfully" });
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -172,7 +172,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ...req.body,
         userId: req.user.id
       });
-      
+
       const extraction = await storage.createDataExtraction(validatedData);
       res.json(extraction);
     } catch (error) {
@@ -201,7 +201,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ...req.body,
         userId: req.user.id
       });
-      
+
       const configuration = await storage.createExtractionConfiguration(validatedData);
       res.json(configuration);
     } catch (error) {
@@ -220,7 +220,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!currentUser || currentUser.role !== "admin") {
         return res.status(403).json({ message: "Admin access required" });
       }
-      
+
       const users = await storage.getAllUsers();
       // Remove password from response
       const safeUsers = users.map(({ password, ...user }) => user);
@@ -250,7 +250,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const { confirmPassword, ...userData } = result.data;
       const hashedPassword = await bcrypt.hash(userData.password, 10);
-      
+
       const user = await storage.createUser({
         ...userData,
         password: hashedPassword,
@@ -278,7 +278,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         userId: parseInt(req.params.id),
         ...req.body
       });
-      
+
       if (!result.success) {
         return res.status(400).json({ 
           message: "Validation failed", 
@@ -288,7 +288,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const { userId, newPassword } = result.data;
       const hashedPassword = await bcrypt.hash(newPassword, 10);
-      
+
       await storage.updateUserPasswordById(userId, hashedPassword);
       res.json({ message: "Password updated successfully" });
     } catch (error) {
@@ -306,7 +306,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const userId = parseInt(req.params.id);
       const { isActive } = req.body;
-      
+
       if (typeof isActive !== "boolean") {
         return res.status(400).json({ message: "isActive must be a boolean" });
       }
@@ -334,11 +334,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const id = parseInt(req.params.id);
       const dataSystem = await storage.getDataSystem(id);
-      
+
       if (!dataSystem) {
         return res.status(404).json({ message: "Data system not found" });
       }
-      
+
       res.json(dataSystem);
     } catch (error) {
       console.error("Get data system error:", error);
@@ -367,6 +367,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           message: "Name is required for creating data system" 
         });
       }
+
+       // Check if data system name already exists
+       const existingDataSystem = await storage.getDataSystemByName(result.data.name);
+       if (existingDataSystem) {
+         return res.status(400).json({ message: "Data system name already exists" });
+       }
 
       const dataSystem = await storage.createDataSystem(result.data);
       res.status(201).json(dataSystem);
@@ -399,6 +405,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
+       // Check if data system name already exists, excluding the current data system
+       if (result.data.name) {
+        const existingDataSystem = await storage.getDataSystemByName(result.data.name);
+        if (existingDataSystem && existingDataSystem.id !== id) {
+          return res.status(400).json({ message: "Data system name already exists" });
+        }
+      }
+
       const dataSystem = await storage.updateDataSystem(id, result.data);
       res.json(dataSystem);
     } catch (error) {
@@ -415,7 +429,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const id = parseInt(req.params.id);
-      
+
       // Check if there are any data sources associated with this data system
       const associatedDataSources = await storage.getDataSourcesBySystem(id);
       if (associatedDataSources.length > 0) {
@@ -458,11 +472,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const id = parseInt(req.params.id);
       const dataSource = await storage.getDataSource(id);
-      
+
       if (!dataSource) {
         return res.status(404).json({ message: "Data source not found" });
       }
-      
+
       res.json(dataSource);
     } catch (error) {
       console.error("Get data source error:", error);
@@ -592,7 +606,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const sourceId = parseInt(req.params.sourceId);
       const attributeData = { ...req.body, dataSourceId: sourceId };
-      
+
       const result = insertDataSourceAttributeSchema.safeParse(attributeData);
       if (!result.success) {
         return res.status(400).json({ 
@@ -797,7 +811,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       },
       filename: (req, file, cb) => {
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        cb(null, `${uniqueSuffix}-${file.originalname}`);
+        ```text
+cb(null, `${uniqueSuffix}-${file.originalname}`);
       }
     }),
     fileFilter: (req, file, cb) => {
@@ -868,7 +883,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/data-extraction/extract", authenticateToken, async (req: any, res) => {
     try {
       const { dataSystemId } = req.body;
-      
+
       if (!dataSystemId) {
         return res.status(400).json({ message: "Data system ID is required" });
       }
@@ -876,21 +891,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get all data sources for this data system
       const dataSources = await storage.getDataSourcesBySystem(dataSystemId);
       const masterDataSources = dataSources.filter(ds => ds.activeFlag && ds.isMaster);
-      
+
       if (masterDataSources.length === 0) {
         return res.status(400).json({ message: "No master data sources found" });
       }
 
       // Get all cross references
       const crossReferences = await storage.getAllCrossReferences();
-      
+
       // Process each master data source
       const extractedData: any[] = [];
-      
+
       for (const masterDataSource of masterDataSources) {
         // Find the uploaded file for this master data source using file mapping
         const masterFileName = fileMapping.get(masterDataSource.id);
-        
+
         if (!masterFileName) {
           console.log(`No uploaded file found for master data source: ${masterDataSource.name}`);
           continue;
@@ -901,7 +916,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const masterCsvResult = await readCSVFile(masterFilePath);
         const masterCsvData = masterCsvResult.data;
         const masterCsvColumns = masterCsvResult.columns;
-        
+
         if (masterCsvData.length === 0) {
           console.log(`No data found in master file: ${masterFileName}`);
           continue;
@@ -909,10 +924,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         // Get master data source attributes
         const masterAttributes = await storage.getDataSourceAttributes(masterDataSource.id);
-        
+
         // First, determine all column names in the correct order
         const allColumnNames: string[] = [];
-        
+
         // Add master data source column names first - preserve CSV column order
         for (const csvColumn of masterCsvColumns) {
           const attr = masterAttributes.find(a => a.name === csvColumn);
@@ -921,28 +936,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
             allColumnNames.push(columnName);
           }
         }
-        
+
         // Find cross references for the current data system and add reference column names
         const relevantCrossRefs = crossReferences.filter(cr => 
           cr.dataSystemId === dataSystemId
         );
-        
+
         for (const crossRef of relevantCrossRefs) {
           const mappings = await storage.getCrossReferenceMappings(crossRef.id);
-          
+
           for (const mapping of mappings) {
             const sourceDataSource = dataSources.find(ds => ds.id === mapping.sourceDataSourceId);
             const targetDataSource = dataSources.find(ds => ds.id === mapping.targetDataSourceId);
-            
+
             if (sourceDataSource && targetDataSource && sourceDataSource.id === masterDataSource.id) {
               const targetAttributes = await storage.getDataSourceAttributes(targetDataSource.id);
               const targetFileName = fileMapping.get(targetDataSource.id);
-              
+
               if (targetFileName) {
                 const targetFilePath = path.join(uploadDir, targetFileName);
                 const targetCsvResult = await readCSVFile(targetFilePath);
                 const targetCsvColumns = targetCsvResult.columns;
-                
+
                 // Add target data source column names - preserve CSV column order
                 for (const csvColumn of targetCsvColumns) {
                   const attr = targetAttributes.find(a => a.name === csvColumn);
@@ -957,16 +972,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
           }
         }
-        
+
         // Process each row in master data
         for (const masterRow of masterCsvData) {
           const outputRow: any = {};
-          
+
           // Initialize all columns with empty values in the correct order
           for (const columnName of allColumnNames) {
             outputRow[columnName] = '';
           }
-          
+
           // Add master data source columns - preserve CSV column order
           for (const csvColumn of masterCsvColumns) {
             const attr = masterAttributes.find(a => a.name === csvColumn);
@@ -976,62 +991,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
               outputRow[columnName] = formatAttributeValue(rawValue, attr);
             }
           }
-          
+
           // Process cross references to add reference data
           for (const crossRef of relevantCrossRefs) {
             const mappings = await storage.getCrossReferenceMappings(crossRef.id);
             console.log(`Processing cross reference: ${crossRef.name} with ${mappings.length} mappings`);
-            
+
             for (const mapping of mappings) {
               const sourceDataSource = dataSources.find(ds => ds.id === mapping.sourceDataSourceId);
               const targetDataSource = dataSources.find(ds => ds.id === mapping.targetDataSourceId);
-              
+
               if (!sourceDataSource || !targetDataSource) {
                 console.log(`Skipping mapping - source or target data source not found`);
                 continue;
               }
-              
+
               console.log(`Processing mapping: ${sourceDataSource.name} -> ${targetDataSource.name}`);
-              
+
               // Only process if the master data source is the source
               if (sourceDataSource.id === masterDataSource.id) {
                 const targetAttributes = await storage.getDataSourceAttributes(targetDataSource.id);
                 const targetFileName = fileMapping.get(targetDataSource.id);
-                
+
                 if (!targetFileName) {
                   console.log(`No uploaded file found for reference data source: ${targetDataSource.name}`);
                   continue;
                 }
-                
+
                 console.log(`Found target file: ${targetFileName} for ${targetDataSource.name}`);
-                
+
                 const targetFilePath = path.join(uploadDir, targetFileName);
                 const targetCsvResult = await readCSVFile(targetFilePath);
                 const targetCsvData = targetCsvResult.data;
                 const targetCsvColumns = targetCsvResult.columns;
-                
+
                 if (targetCsvData.length === 0) {
                   console.log(`No data found in target file: ${targetFileName}`);
                   continue;
                 }
-                
+
                 const sourceAttr = masterAttributes.find(attr => attr.id === mapping.sourceAttributeId);
                 const targetAttr = targetAttributes.find(attr => attr.id === mapping.targetAttributeId);
-                
+
                 if (!sourceAttr || !targetAttr) {
                   console.log(`Source or target attribute not found for mapping`);
                   continue;
                 }
-                
+
                 console.log(`Mapping attributes: ${sourceAttr.name} -> ${targetAttr.name}`);
-                
+
                 const masterValue = masterRow[sourceAttr.name];
                 const matchingTargetRows = targetCsvData.filter(targetRow => 
                   targetRow[targetAttr.name] === masterValue
                 );
-                
+
                 console.log(`Master value: ${masterValue}, Found ${matchingTargetRows.length} matching rows`);
-                
+
                 if (matchingTargetRows.length > 0) {
                   const targetRow = matchingTargetRows[0];
                   // Add target columns in CSV order
@@ -1048,24 +1063,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
               }
             }
           }
-          
+
           extractedData.push(outputRow);
         }
       }
-      
+
       if (extractedData.length === 0) {
         return res.status(400).json({ message: "No data extracted" });
       }
-      
+
       // Generate CSV output
       const csvOutput = await generateCSVOutput(extractedData);
-      
+
       // Set response headers for file download
       res.setHeader('Content-Type', 'text/csv');
       res.setHeader('Content-Disposition', `attachment; filename="extracted_data_${new Date().toISOString().split('T')[0]}.csv"`);
-      
+
       res.send(csvOutput);
-      
+
     } catch (error) {
       console.error("Data extraction error:", error);
       res.status(500).json({ message: "Data extraction failed" });
@@ -1079,7 +1094,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
 
     const trimmedValue = value.trim();
-    
+
     // If no format specified, return as-is
     if (!attribute.format || !attribute.dataType) {
       return trimmedValue;
@@ -1179,7 +1194,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     return new Promise((resolve, reject) => {
       const results: any[] = [];
       let columnOrder: string[] = [];
-      
+
       fs.createReadStream(filePath)
         .pipe(parse({
           columns: (headers) => {
@@ -1202,10 +1217,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         resolve('');
         return;
       }
-      
+
       // Use the column order as defined in the first row (which was pre-ordered)
       const columnsInOrder = Object.keys(data[0]);
-      
+
       stringify(data, {
         header: true,
         columns: columnsInOrder

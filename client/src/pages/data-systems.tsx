@@ -38,6 +38,22 @@ function CreateDataSystemModal({ isOpen, onClose, editingSystem }: CreateDataSys
     },
   });
 
+  const { data: existingDataSystems = [] } = useQuery<DataSystem[]>({
+    queryKey: ["/api/data-systems"],
+  });
+
+  const validateUniqueName = (name: string) => {
+    const trimmedName = name.trim();
+    if (!trimmedName) return true;
+    
+    const isDuplicate = existingDataSystems.some(system => 
+      system.name.toLowerCase() === trimmedName.toLowerCase() && 
+      system.id !== editingSystem?.id
+    );
+    
+    return !isDuplicate || "Data system name already exists";
+  };
+
   // Reset form values when editingSystem changes
   useEffect(() => {
     if (editingSystem) {
@@ -72,10 +88,16 @@ function CreateDataSystemModal({ isOpen, onClose, editingSystem }: CreateDataSys
       onClose();
       form.reset();
     },
-    onError: (error) => {
+    onError: (error: any) => {
+      let errorMessage = "An error occurred";
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (error.response && error.response.status === 400) {
+        errorMessage = "Data system name already exists. Please choose a different name.";
+      }
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "An error occurred",
+        description: errorMessage,
         variant: "destructive",
       });
     },
@@ -105,6 +127,9 @@ function CreateDataSystemModal({ isOpen, onClose, editingSystem }: CreateDataSys
                   <FormMessage />
                 </FormItem>
               )}
+              rules={{
+                validate: validateUniqueName
+              }}
             />
             <FormField
               control={form.control}
