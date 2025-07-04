@@ -143,6 +143,7 @@ export default function DataExtraction() {
   const activeDataSources = dataSources?.filter(ds => ds.activeFlag) || [];
   const hasAnyFiles = fileUploads.some(u => u.file);
   const allUploaded = fileUploads.length > 0 && fileUploads.every(u => !u.file || u.uploaded);
+  const hasAnyUploaded = fileUploads.some(u => u.uploaded);
 
   // Check if at least one master data source file is uploaded
   const hasMasterDataSourceUploaded = () => {
@@ -208,7 +209,7 @@ export default function DataExtraction() {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 space-y-6 pb-24">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Data Extraction</h1>
@@ -318,7 +319,7 @@ export default function DataExtraction() {
               </div>
             )}
 
-            {allUploaded && fileUploads.length > 0 && (
+            {allUploaded && hasAnyUploaded && fileUploads.length > 0 && (
               <div className="flex justify-center pt-4 border-t">
                 <div className="text-center text-green-600">
                   <CheckCircle className="h-8 w-8 mx-auto mb-2" />
