@@ -908,9 +908,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Get master data source attributes
         const masterAttributes = await storage.getDataSourceAttributes(masterDataSource.id);
         
+        // First, determine all column names in the correct order
+        const allColumnNames: string[] = [];
+        
+        // Add master data source column names first
+        for (const attr of masterAttributes) {
+          const columnName = `${masterDataSource.name}.${attr.name}`;
+          allColumnNames.push(columnName);
+        }
+        
+        // Find cross references for the current data system and add reference column names
+        const relevantCrossRefs = crossReferences.filter(cr => 
+          cr.dataSystemId === dataSystemId
+        );
+        
+        for (const crossRef of relevantCrossRefs) {
+          const mappings = await storage.getCrossReferenceMappings(crossRef.id);
+          
+          for (const mapping of mappings) {
+            const sourceDataSource = dataSources.find(ds => ds.id === mapping.sourceDataSourceId);
+            const targetDataSource = dataSources.find(ds => ds.id === mapping.targetDataSourceId);
+            
+            if (sourceDataSource && targetDataSource && sourceDataSource.id === masterDataSource.id) {
+              const targetAttributes = await storage.getDataSourceAttributes(targetDataSource.id);
+              
+              // Add target data source column names
+              for (const attr of targetAttributes) {
+                const columnName = `${targetDataSource.name}.${attr.name}`;
+                if (!allColumnNames.includes(columnName)) {
+                  allColumnNames.push(columnName);
+                }
+              }
+            }
+          }
+        }
+        
         // Process each row in master data
         for (const masterRow of masterCsvData) {
           const outputRow: any = {};
+          
+          // Initialize all columns with empty values in the correct order
+          for (const columnName of allColumnNames) {
+            outputRow[columnName] = '';
+          }
           
           // Add master data source columns
           for (const attr of masterAttributes) {
@@ -918,18 +958,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
             outputRow[columnName] = masterRow[attr.name] || '';
           }
           
-          // Find cross references for the current data system
-          const relevantCrossRefs = crossReferences.filter(cr => 
-            cr.dataSystemId === dataSystemId
-          );
-          
+          // Process cross references to add reference data
           for (const crossRef of relevantCrossRefs) {
-            // Get cross reference mappings
             const mappings = await storage.getCrossReferenceMappings(crossRef.id);
             console.log(`Processing cross reference: ${crossRef.name} with ${mappings.length} mappings`);
             
             for (const mapping of mappings) {
-              // Get source and target data sources
               const sourceDataSource = dataSources.find(ds => ds.id === mapping.sourceDataSourceId);
               const targetDataSource = dataSources.find(ds => ds.id === mapping.targetDataSourceId);
               
@@ -942,10 +976,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               
               // Only process if the master data source is the source
               if (sourceDataSource.id === masterDataSource.id) {
-                // Get target data source attributes
                 const targetAttributes = await storage.getDataSourceAttributes(targetDataSource.id);
-                
-                // Find the uploaded file for target data source using file mapping
                 const targetFileName = fileMapping.get(targetDataSource.id);
                 
                 if (!targetFileName) {
@@ -955,7 +986,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 
                 console.log(`Found target file: ${targetFileName} for ${targetDataSource.name}`);
                 
-                // Read target CSV data
                 const targetFilePath = path.join(uploadDir, targetFileName);
                 const targetCsvData = await readCSVFile(targetFilePath);
                 
@@ -964,7 +994,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   continue;
                 }
                 
-                // Get mapping attributes
                 const sourceAttr = masterAttributes.find(attr => attr.id === mapping.sourceAttributeId);
                 const targetAttr = targetAttributes.find(attr => attr.id === mapping.targetAttributeId);
                 
@@ -975,7 +1004,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 
                 console.log(`Mapping attributes: ${sourceAttr.name} -> ${targetAttr.name}`);
                 
-                // Find matching rows in target data based on cross reference mapping
                 const masterValue = masterRow[sourceAttr.name];
                 const matchingTargetRows = targetCsvData.filter(targetRow => 
                   targetRow[targetAttr.name] === masterValue
@@ -983,10 +1011,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 
                 console.log(`Master value: ${masterValue}, Found ${matchingTargetRows.length} matching rows`);
                 
-                // Add target data source columns for matching rows
                 if (matchingTargetRows.length > 0) {
-                  // For multiple matching rows, we'll take the first one
-                  // In a more complex scenario, you might want to handle this differently
                   const targetRow = matchingTargetRows[0];
                   for (const attr of targetAttributes) {
                     const columnName = `${targetDataSource.name}.${attr.name}`;
@@ -1046,19 +1071,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return;
       }
       
-      // Preserve column order by collecting columns in the order they appear
-      const columnsInOrder: string[] = [];
-      const seenColumns = new Set<string>();
-      
-      // Go through each row to collect columns in order of appearance
-      data.forEach(row => {
-        Object.keys(row).forEach(key => {
-          if (!seenColumns.has(key)) {
-            seenColumns.add(key);
-            columnsInOrder.push(key);
-          }
-        });
-      });
+      // Use the column order as defined in the first row (which was pre-ordered)
+      const columnsInOrder = Object.keys(data[0]);
       
       stringify(data, {
         header: true,
