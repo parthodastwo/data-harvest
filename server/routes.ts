@@ -371,7 +371,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
        // Check if data system name already exists
        const existingDataSystem = await storage.getDataSystemByName(result.data.name);
        if (existingDataSystem) {
-         return res.status(400).json({ message: "Data system name already exists" });
+         return res.status(400).json({ message: "Data System with this name already exists" });
        }
 
       const dataSystem = await storage.createDataSystem(result.data);
@@ -409,7 +409,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
        if (result.data.name) {
         const existingDataSystem = await storage.getDataSystemByName(result.data.name);
         if (existingDataSystem && existingDataSystem.id !== id) {
-          return res.status(400).json({ message: "Data system name already exists" });
+          return res.status(400).json({ message: "Data System with this name already exists" });
         }
       }
 
