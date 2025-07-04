@@ -898,7 +898,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         // Read master CSV data
         const masterFilePath = path.join(uploadDir, masterFileName);
-        const masterCsvData = await readCSVFile(masterFilePath);
+        const masterCsvResult = await readCSVFile(masterFilePath);
+        const masterCsvData = masterCsvResult.data;
+        const masterCsvColumns = masterCsvResult.columns;
         
         if (masterCsvData.length === 0) {
           console.log(`No data found in master file: ${masterFileName}`);
@@ -911,10 +913,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // First, determine all column names in the correct order
         const allColumnNames: string[] = [];
         
-        // Add master data source column names first
-        for (const attr of masterAttributes) {
-          const columnName = `${masterDataSource.name}.${attr.name}`;
-          allColumnNames.push(columnName);
+        // Add master data source column names first - preserve CSV column order
+        for (const csvColumn of masterCsvColumns) {
+          const attr = masterAttributes.find(a => a.name === csvColumn);
+          if (attr) {
+            const columnName = `${masterDataSource.name}.${attr.name}`;
+            allColumnNames.push(columnName);
+          }
         }
         
         // Find cross references for the current data system and add reference column names
@@ -931,12 +936,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
             
             if (sourceDataSource && targetDataSource && sourceDataSource.id === masterDataSource.id) {
               const targetAttributes = await storage.getDataSourceAttributes(targetDataSource.id);
+              const targetFileName = fileMapping.get(targetDataSource.id);
               
-              // Add target data source column names
-              for (const attr of targetAttributes) {
-                const columnName = `${targetDataSource.name}.${attr.name}`;
-                if (!allColumnNames.includes(columnName)) {
-                  allColumnNames.push(columnName);
+              if (targetFileName) {
+                const targetFilePath = path.join(uploadDir, targetFileName);
+                const targetCsvResult = await readCSVFile(targetFilePath);
+                const targetCsvColumns = targetCsvResult.columns;
+                
+                // Add target data source column names - preserve CSV column order
+                for (const csvColumn of targetCsvColumns) {
+                  const attr = targetAttributes.find(a => a.name === csvColumn);
+                  if (attr) {
+                    const columnName = `${targetDataSource.name}.${attr.name}`;
+                    if (!allColumnNames.includes(columnName)) {
+                      allColumnNames.push(columnName);
+                    }
+                  }
                 }
               }
             }
@@ -952,10 +967,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
             outputRow[columnName] = '';
           }
           
-          // Add master data source columns
-          for (const attr of masterAttributes) {
-            const columnName = `${masterDataSource.name}.${attr.name}`;
-            outputRow[columnName] = masterRow[attr.name] || '';
+          // Add master data source columns - preserve CSV column order
+          for (const csvColumn of masterCsvColumns) {
+            const attr = masterAttributes.find(a => a.name === csvColumn);
+            if (attr) {
+              const columnName = `${masterDataSource.name}.${attr.name}`;
+              outputRow[columnName] = masterRow[attr.name] || '';
+            }
           }
           
           // Process cross references to add reference data
@@ -987,7 +1005,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 console.log(`Found target file: ${targetFileName} for ${targetDataSource.name}`);
                 
                 const targetFilePath = path.join(uploadDir, targetFileName);
-                const targetCsvData = await readCSVFile(targetFilePath);
+                const targetCsvResult = await readCSVFile(targetFilePath);
+                const targetCsvData = targetCsvResult.data;
+                const targetCsvColumns = targetCsvResult.columns;
                 
                 if (targetCsvData.length === 0) {
                   console.log(`No data found in target file: ${targetFileName}`);
@@ -1013,11 +1033,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 
                 if (matchingTargetRows.length > 0) {
                   const targetRow = matchingTargetRows[0];
-                  for (const attr of targetAttributes) {
-                    const columnName = `${targetDataSource.name}.${attr.name}`;
-                    outputRow[columnName] = targetRow[attr.name] || '';
+                  // Add target columns in CSV order
+                  for (const csvColumn of targetCsvColumns) {
+                    const attr = targetAttributes.find(a => a.name === csvColumn);
+                    if (attr) {
+                      const columnName = `${targetDataSource.name}.${attr.name}`;
+                      outputRow[columnName] = targetRow[attr.name] || '';
+                    }
                   }
-                  console.log(`Added ${targetAttributes.length} columns from ${targetDataSource.name}`);
+                  console.log(`Added ${targetCsvColumns.length} columns from ${targetDataSource.name}`);
                 }
               }
             }
@@ -1046,19 +1070,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Helper function to read CSV file
-  async function readCSVFile(filePath: string): Promise<any[]> {
+  // Helper function to read CSV file with column order preservation
+  async function readCSVFile(filePath: string): Promise<{ data: any[], columns: string[] }> {
     return new Promise((resolve, reject) => {
       const results: any[] = [];
+      let columnOrder: string[] = [];
       
       fs.createReadStream(filePath)
         .pipe(parse({
-          columns: true,
+          columns: (headers) => {
+            columnOrder = headers;
+            return headers;
+          },
           skip_empty_lines: true,
           trim: true
         }))
         .on('data', (data) => results.push(data))
-        .on('end', () => resolve(results))
+        .on('end', () => resolve({ data: results, columns: columnOrder }))
         .on('error', reject);
     });
   }
