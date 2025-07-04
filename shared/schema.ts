@@ -52,7 +52,7 @@ export const dataSystems = pgTable("data_systems", {
 export const dataSources = pgTable("data_sources", {
   id: serial("id").primaryKey(),
   dataSystemId: integer("data_system_id").references(() => dataSystems.id).notNull(),
-  name: text("name").notNull(),
+  name: text("name").notNull().unique(),
   description: text("description"),
   filename: text("filename").notNull(),
   activeFlag: boolean("active_flag").default(true).notNull(),

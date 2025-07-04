@@ -518,6 +518,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
+      // Check if data source name already exists
+      const existingDataSource = await storage.getDataSourceByName(result.data.name);
+      if (existingDataSource) {
+        return res.status(400).json({ message: "Data Source with this name already exists" });
+      }
+
       const dataSource = await storage.createDataSource(result.data);
       res.status(201).json(dataSource);
     } catch (error) {
@@ -559,6 +565,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ 
           message: "Enter Data system for creating data source" 
         });
+      }
+
+      // Check if data source name already exists, excluding the current data source
+      if (result.data.name) {
+        const existingDataSource = await storage.getDataSourceByName(result.data.name);
+        if (existingDataSource && existingDataSource.id !== id) {
+          return res.status(400).json({ message: "Data Source with this name already exists" });
+        }
       }
 
       const dataSource = await storage.updateDataSource(id, result.data);
