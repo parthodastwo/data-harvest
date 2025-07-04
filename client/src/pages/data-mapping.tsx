@@ -263,7 +263,7 @@ export default function DataMapping() {
                 <p className="text-muted-foreground">No SRCM canonical attributes found</p>
               </div>
             ) : (
-              <div className="max-h-[60vh] overflow-auto">
+              <div className="max-h-[40vh] overflow-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
