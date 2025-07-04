@@ -342,14 +342,14 @@ function MappingTableRow({
       <TableCell>
         {isEditing ? (
           <Select
-            value={row.sourceDataSourceId?.toString() || ""}
-            onValueChange={(value) => onUpdateField(index, 'sourceDataSourceId', value ? parseInt(value) : undefined)}
+            value={row.sourceDataSourceId?.toString() || "none"}
+            onValueChange={(value) => onUpdateField(index, 'sourceDataSourceId', value === "none" ? undefined : parseInt(value))}
           >
             <SelectTrigger>
               <SelectValue placeholder="Select data source" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">None</SelectItem>
+              <SelectItem value="none">None</SelectItem>
               {activeDataSources.map((ds) => (
                 <SelectItem key={ds.id} value={ds.id.toString()}>
                   {ds.name}
@@ -365,15 +365,15 @@ function MappingTableRow({
       <TableCell>
         {isEditing ? (
           <Select
-            value={row.sourceAttributeId?.toString() || ""}
-            onValueChange={(value) => onUpdateField(index, 'sourceAttributeId', value ? parseInt(value) : undefined)}
+            value={row.sourceAttributeId?.toString() || "none"}
+            onValueChange={(value) => onUpdateField(index, 'sourceAttributeId', value === "none" ? undefined : parseInt(value))}
             disabled={!row.sourceDataSourceId}
           >
             <SelectTrigger>
               <SelectValue placeholder="Select attribute" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">None</SelectItem>
+              <SelectItem value="none">None</SelectItem>
               {attributes.map((attr) => (
                 <SelectItem key={attr.id} value={attr.id.toString()}>
                   {attr.name}
