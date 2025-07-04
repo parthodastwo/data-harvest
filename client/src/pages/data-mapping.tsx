@@ -252,7 +252,7 @@ export default function DataMapping() {
       {selectedDataSystemId > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>Data Mapping Table</CardTitle>
+            <CardTitle>Data Mappings</CardTitle>
             <p className="text-sm text-muted-foreground">
               Map SRCM canonical attributes to data source attributes for the selected system
             </p>
