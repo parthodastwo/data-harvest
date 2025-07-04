@@ -37,7 +37,7 @@ export function Sidebar() {
               </div>
               {!isCollapsed && (
                 <div className="ml-3">
-                  <h2 className="font-bold text-lg text-gray-900">Health Data Harvest</h2>
+                  <h4 className="font-bold text-lg text-gray-900">Data Harvest</h4>
                   <p className="text-xs text-gray-600">Data Extraction Platform</p>
                 </div>
               )}
