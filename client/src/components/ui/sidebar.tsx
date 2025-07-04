@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Heart, LayoutDashboard, HardDrive, Database, GitBranch, Download, Settings, Users, Menu, LogOut } from "lucide-react";
+import { Heart, LayoutDashboard, HardDrive, Database, GitBranch, Download, Settings, Users, Menu, LogOut, Shuffle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 import { useLocation } from "wouter";
@@ -16,6 +16,7 @@ export function Sidebar() {
     { icon: HardDrive, label: "Data Systems", path: "/data-systems" },
     { icon: Database, label: "Data Sources", path: "/data-sources" },
     { icon: GitBranch, label: "Cross References", path: "/cross-references" },
+    { icon: Shuffle, label: "Data Mapping", path: "/data-mapping" },
     { icon: Download, label: "Data Extraction", path: "/data-extraction" },
     { icon: Settings, label: "Configurations", path: "/configurations" },
     { icon: Users, label: "User Management", path: "/users", adminOnly: true },

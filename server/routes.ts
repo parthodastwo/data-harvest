@@ -8,7 +8,7 @@ import { stringify } from "csv-stringify";
 import { storage } from "./storage";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import { loginSchema, registerSchema, changePasswordSchema, createUserSchema, updateUserPasswordSchema, insertDataExtractionSchema, insertExtractionConfigurationSchema, insertDataSystemSchema, insertDataSourceSchema, insertDataSourceAttributeSchema, insertCrossReferenceSchema, insertCrossReferenceMappingSchema, type User } from "@shared/schema";
+import { loginSchema, registerSchema, changePasswordSchema, createUserSchema, updateUserPasswordSchema, insertDataExtractionSchema, insertExtractionConfigurationSchema, insertDataSystemSchema, insertDataSourceSchema, insertDataSourceAttributeSchema, insertCrossReferenceSchema, insertCrossReferenceMappingSchema, insertSrcmCanonicalSchema, insertDataMappingSchema, type User } from "@shared/schema";
 import { z } from "zod";
 
 // Extend Express Request interface to include user
@@ -1261,6 +1261,88 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     });
   }
+
+  // SRCM Canonical routes
+  app.get("/api/srcm-canonical", authenticateToken, async (req, res) => {
+    try {
+      const srcmCanonicals = await storage.getAllSrcmCanonical();
+      res.json(srcmCanonicals);
+    } catch (error) {
+      console.error("Get SRCM canonical error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.post("/api/srcm-canonical", authenticateToken, async (req, res) => {
+    try {
+      const currentUser = await storage.getUser(req.user.id);
+      if (!currentUser || currentUser.role !== "admin") {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      const srcmCanonicalData = insertSrcmCanonicalSchema.parse(req.body);
+      const srcmCanonical = await storage.createSrcmCanonical(srcmCanonicalData);
+      res.json(srcmCanonical);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid input", errors: error.errors });
+      }
+      console.error("Create SRCM canonical error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Data Mapping routes
+  app.get("/api/data-systems/:systemId/data-mappings", authenticateToken, async (req, res) => {
+    try {
+      const systemId = parseInt(req.params.systemId);
+      const mappings = await storage.getDataMappingsBySystem(systemId);
+      res.json(mappings);
+    } catch (error) {
+      console.error("Get data mappings error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.post("/api/data-mappings", authenticateToken, async (req, res) => {
+    try {
+      const mappingData = insertDataMappingSchema.parse(req.body);
+      const mapping = await storage.createDataMapping(mappingData);
+      res.json(mapping);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid input", errors: error.errors });
+      }
+      console.error("Create data mapping error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.put("/api/data-mappings/:id", authenticateToken, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const mappingData = insertDataMappingSchema.partial().parse(req.body);
+      const mapping = await storage.updateDataMapping(id, mappingData);
+      res.json(mapping);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid input", errors: error.errors });
+      }
+      console.error("Update data mapping error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.delete("/api/data-mappings/:id", authenticateToken, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteDataMapping(id);
+      res.json({ message: "Data mapping deleted successfully" });
+    } catch (error) {
+      console.error("Delete data mapping error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
 
   const httpServer = createServer(app);
   return httpServer;

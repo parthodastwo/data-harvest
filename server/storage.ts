@@ -1,6 +1,6 @@
-import { users, dataExtractions, extractionConfigurations, dataSystems, dataSources, dataSourceAttributes, crossReferences, crossReferenceMappings, type User, type InsertUser, type DataExtraction, type InsertDataExtraction, type ExtractionConfiguration, type InsertExtractionConfiguration, type DataSystem, type InsertDataSystem, type DataSource, type InsertDataSource, type DataSourceAttribute, type InsertDataSourceAttribute, type CrossReference, type InsertCrossReference, type CrossReferenceMapping, type InsertCrossReferenceMapping } from "@shared/schema";
+import { users, dataExtractions, extractionConfigurations, dataSystems, dataSources, dataSourceAttributes, crossReferences, crossReferenceMappings, srcmCanonical, dataMappings, type User, type DataExtraction, type ExtractionConfiguration, type DataSystem, type DataSource, type DataSourceAttribute, type CrossReference, type CrossReferenceMapping, type SrcmCanonical, type DataMapping, type InsertDataExtraction, type InsertExtractionConfiguration, type InsertDataSystem, type InsertDataSource, type InsertDataSourceAttribute, type InsertCrossReference, type InsertCrossReferenceMapping, type InsertSrcmCanonical, type InsertDataMapping } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, and } from "drizzle-orm";
 
 export interface IStorage {
   // User methods
@@ -9,22 +9,22 @@ export interface IStorage {
   getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   updateUserPassword(id: number, hashedPassword: string): Promise<void>;
-  
+
   // User management methods
   getAllUsers(): Promise<User[]>;
   updateUserPasswordById(userId: number, hashedPassword: string): Promise<void>;
   updateUserStatus(userId: number, isActive: boolean): Promise<void>;
-  
+
   // Data extraction methods
   getDataExtractions(userId: number): Promise<DataExtraction[]>;
   getDataExtraction(id: number): Promise<DataExtraction | undefined>;
   createDataExtraction(extraction: InsertDataExtraction): Promise<DataExtraction>;
   updateDataExtractionStatus(id: number, status: string): Promise<void>;
-  
+
   // Configuration methods
   getExtractionConfigurations(userId: number): Promise<ExtractionConfiguration[]>;
   createExtractionConfiguration(config: InsertExtractionConfiguration): Promise<ExtractionConfiguration>;
-  
+
   // Data System methods
   getAllDataSystems(): Promise<DataSystem[]>;
   getDataSystem(id: number): Promise<DataSystem | undefined>;
@@ -32,7 +32,7 @@ export interface IStorage {
   createDataSystem(dataSystem: InsertDataSystem): Promise<DataSystem>;
   updateDataSystem(id: number, dataSystem: Partial<InsertDataSystem>): Promise<DataSystem>;
   deleteDataSystem(id: number): Promise<void>;
-  
+
   // Data Source methods
   getAllDataSources(): Promise<DataSource[]>;
   getDataSourcesBySystem(dataSystemId: number): Promise<DataSource[]>;
@@ -41,27 +41,41 @@ export interface IStorage {
   createDataSource(dataSource: InsertDataSource): Promise<DataSource>;
   updateDataSource(id: number, dataSource: Partial<InsertDataSource>): Promise<DataSource>;
   deleteDataSource(id: number): Promise<void>;
-  
+
   // Data Source Attribute methods
   getDataSourceAttributes(dataSourceId: number): Promise<DataSourceAttribute[]>;
   getDataSourceAttribute(id: number): Promise<DataSourceAttribute | undefined>;
   createDataSourceAttribute(attribute: InsertDataSourceAttribute): Promise<DataSourceAttribute>;
   updateDataSourceAttribute(id: number, attribute: Partial<InsertDataSourceAttribute>): Promise<DataSourceAttribute>;
   deleteDataSourceAttribute(id: number): Promise<void>;
-  
+
   // Cross Reference methods
   getAllCrossReferences(): Promise<CrossReference[]>;
   getCrossReference(id: number): Promise<CrossReference | undefined>;
   createCrossReference(crossReference: InsertCrossReference): Promise<CrossReference>;
   updateCrossReference(id: number, crossReference: Partial<InsertCrossReference>): Promise<CrossReference>;
   deleteCrossReference(id: number): Promise<void>;
-  
+
   // Cross Reference Mapping methods
   getCrossReferenceMappings(crossReferenceId: number): Promise<CrossReferenceMapping[]>;
   getCrossReferenceMapping(id: number): Promise<CrossReferenceMapping | undefined>;
   createCrossReferenceMapping(mapping: InsertCrossReferenceMapping): Promise<CrossReferenceMapping>;
   updateCrossReferenceMapping(id: number, mapping: Partial<InsertCrossReferenceMapping>): Promise<CrossReferenceMapping>;
   deleteCrossReferenceMapping(id: number): Promise<void>;
+
+  // SRCM Canonical methods
+  getAllSrcmCanonical(): Promise<SrcmCanonical[]>;
+  getSrcmCanonical(id: number): Promise<SrcmCanonical | undefined>;
+  createSrcmCanonical(data: InsertSrcmCanonical): Promise<SrcmCanonical>;
+  updateSrcmCanonical(id: number, data: Partial<InsertSrcmCanonical>): Promise<SrcmCanonical>;
+  deleteSrcmCanonical(id: number): Promise<void>;
+
+  // Data Mappings methods
+  getDataMappingsBySystem(dataSystemId: number): Promise<any[]>;
+  createDataMapping(data: InsertDataMapping): Promise<DataMapping>;
+  updateDataMapping(id: number, data: Partial<InsertDataMapping>): Promise<DataMapping>;
+  deleteDataMapping(id: number): Promise<void>;
+  getDataMappingBySrcmAndSystem(dataSystemId: number, srcmCanonicalId: number): Promise<DataMapping | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -86,7 +100,7 @@ export class DatabaseStorage implements IStorage {
       ...insertUser,
       role: insertUser.role?.trim() || 'user'
     };
-    
+
     const [user] = await db
       .insert(users)
       .values(cleanUser)
@@ -333,6 +347,75 @@ export class DatabaseStorage implements IStorage {
 
   async deleteCrossReferenceMapping(id: number): Promise<void> {
     await db.delete(crossReferenceMappings).where(eq(crossReferenceMappings.id, id));
+  }
+
+  // SRCM Canonical methods
+  async getAllSrcmCanonical(): Promise<SrcmCanonical[]> {
+    return await db.select().from(srcmCanonical).orderBy(srcmCanonical.name);
+  }
+
+  async getSrcmCanonical(id: number): Promise<SrcmCanonical | undefined> {
+    const result = await db.select().from(srcmCanonical).where(eq(srcmCanonical.id, id));
+    return result[0];
+  }
+
+  async createSrcmCanonical(data: InsertSrcmCanonical): Promise<SrcmCanonical> {
+    const result = await db.insert(srcmCanonical).values(data).returning();
+    return result[0];
+  }
+
+  async updateSrcmCanonical(id: number, data: Partial<InsertSrcmCanonical>): Promise<SrcmCanonical> {
+    const result = await db.update(srcmCanonical).set({ ...data, updatedAt: new Date() }).where(eq(srcmCanonical.id, id)).returning();
+    return result[0];
+  }
+
+  async deleteSrcmCanonical(id: number): Promise<void> {
+    await db.delete(srcmCanonical).where(eq(srcmCanonical.id, id));
+  }
+
+  // Data Mappings methods
+  async getDataMappingsBySystem(dataSystemId: number): Promise<any[]> {
+    return await db
+      .select({
+        id: dataMappings.id,
+        dataSystemId: dataMappings.dataSystemId,
+        srcmCanonicalId: dataMappings.srcmCanonicalId,
+        srcmCanonicalName: srcmCanonical.name,
+        sourceDataSourceId: dataMappings.sourceDataSourceId,
+        sourceDataSourceName: dataSources.name,
+        sourceAttributeId: dataMappings.sourceAttributeId,
+        sourceAttributeName: dataSourceAttributes.name,
+        createdAt: dataMappings.createdAt,
+        updatedAt: dataMappings.updatedAt,
+      })
+      .from(dataMappings)
+      .innerJoin(srcmCanonical, eq(dataMappings.srcmCanonicalId, srcmCanonical.id))
+      .leftJoin(dataSources, eq(dataMappings.sourceDataSourceId, dataSources.id))
+      .leftJoin(dataSourceAttributes, eq(dataMappings.sourceAttributeId, dataSourceAttributes.id))
+      .where(eq(dataMappings.dataSystemId, dataSystemId))
+      .orderBy(srcmCanonical.name);
+  }
+
+  async createDataMapping(data: InsertDataMapping): Promise<DataMapping> {
+    const result = await db.insert(dataMappings).values(data).returning();
+    return result[0];
+  }
+
+  async updateDataMapping(id: number, data: Partial<InsertDataMapping>): Promise<DataMapping> {
+    const result = await db.update(dataMappings).set({ ...data, updatedAt: new Date() }).where(eq(dataMappings.id, id)).returning();
+    return result[0];
+  }
+
+  async deleteDataMapping(id: number): Promise<void> {
+    await db.delete(dataMappings).where(eq(dataMappings.id, id));
+  }
+
+  async getDataMappingBySrcmAndSystem(dataSystemId: number, srcmCanonicalId: number): Promise<DataMapping | undefined> {
+    const result = await db
+      .select()
+      .from(dataMappings)
+      .where(and(eq(dataMappings.dataSystemId, dataSystemId), eq(dataMappings.srcmCanonicalId, srcmCanonicalId)));
+    return result[0];
   }
 }
 

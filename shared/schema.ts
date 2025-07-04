@@ -91,6 +91,26 @@ export const crossReferenceMappings = pgTable("cross_reference_mappings", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+export const srcmCanonical = pgTable("srcm_canonical", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description"),
+  dataType: text("data_type"),
+  isActive: boolean("is_active").default(true).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const dataMappings = pgTable("data_mappings", {
+  id: serial("id").primaryKey(),
+  dataSystemId: integer("data_system_id").references(() => dataSystems.id).notNull(),
+  srcmCanonicalId: integer("srcm_canonical_id").references(() => srcmCanonical.id).notNull(),
+  sourceDataSourceId: integer("source_data_source_id").references(() => dataSources.id),
+  sourceAttributeId: integer("source_attribute_id").references(() => dataSourceAttributes.id),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
   createdAt: true,
@@ -175,6 +195,18 @@ export const insertCrossReferenceMappingSchema = createInsertSchema(crossReferen
   updatedAt: true,
 });
 
+export const insertSrcmCanonicalSchema = createInsertSchema(srcmCanonical).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertDataMappingSchema = createInsertSchema(dataMappings).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type LoginRequest = z.infer<typeof loginSchema>;
@@ -196,3 +228,7 @@ export type InsertCrossReference = z.infer<typeof insertCrossReferenceSchema>;
 export type CrossReference = typeof crossReferences.$inferSelect;
 export type InsertCrossReferenceMapping = z.infer<typeof insertCrossReferenceMappingSchema>;
 export type CrossReferenceMapping = typeof crossReferenceMappings.$inferSelect;
+export type InsertSrcmCanonical = z.infer<typeof insertSrcmCanonicalSchema>;
+export type SrcmCanonical = typeof srcmCanonical.$inferSelect;
+export type InsertDataMapping = z.infer<typeof insertDataMappingSchema>;
+export type DataMapping = typeof dataMappings.$inferSelect;
