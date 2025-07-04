@@ -797,8 +797,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       },
       filename: (req, file, cb) => {
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        const dataSourceId = req.body.dataSourceId;
-        cb(null, `${uniqueSuffix}-${dataSourceId}-${file.originalname}`);
+        cb(null, `${uniqueSuffix}-${file.originalname}`);
       }
     }),
     fileFilter: (req, file, cb) => {
@@ -812,6 +811,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       fileSize: 10 * 1024 * 1024, // 10MB limit
     }
   });
+
+  // In-memory storage for file mappings (in production, this should be in database)
+  const fileMapping = new Map<number, string>(); // dataSourceId -> filename
 
   // Data Extraction file upload endpoint
   app.post("/api/data-extraction/upload", authenticateToken, upload.single('file'), async (req: any, res) => {
@@ -831,6 +833,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Data source not found" });
       }
 
+      // Store file mapping for later retrieval
+      fileMapping.set(dataSourceId, req.file.filename);
+
       // Store file info (you can extend this to store in database if needed)
       const fileInfo = {
         originalName: req.file.originalname,
@@ -843,6 +848,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
 
       console.log("File uploaded:", fileInfo);
+      console.log("File mapping updated:", Array.from(fileMapping.entries()));
 
       res.json({ 
         message: "File uploaded successfully",
@@ -882,23 +888,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const extractedData: any[] = [];
       
       for (const masterDataSource of masterDataSources) {
-        // Find the uploaded file for this master data source
-        const uploadedFiles = fs.readdirSync(uploadDir);
-        const masterFile = uploadedFiles.find(file => 
-          file.includes(`-${masterDataSource.id}-`) && file.endsWith('.csv')
-        );
+        // Find the uploaded file for this master data source using file mapping
+        const masterFileName = fileMapping.get(masterDataSource.id);
         
-        if (!masterFile) {
+        if (!masterFileName) {
           console.log(`No uploaded file found for master data source: ${masterDataSource.name}`);
           continue;
         }
 
         // Read master CSV data
-        const masterFilePath = path.join(uploadDir, masterFile);
+        const masterFilePath = path.join(uploadDir, masterFileName);
         const masterCsvData = await readCSVFile(masterFilePath);
         
         if (masterCsvData.length === 0) {
-          console.log(`No data found in master file: ${masterFile}`);
+          console.log(`No data found in master file: ${masterFileName}`);
           continue;
         }
 
@@ -936,15 +939,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 // Get target data source attributes
                 const targetAttributes = await storage.getDataSourceAttributes(targetDataSource.id);
                 
-                // Find the uploaded file for target data source
-                const targetFile = uploadedFiles.find(file => 
-                  file.includes(`-${targetDataSource.id}-`) && file.endsWith('.csv')
-                );
+                // Find the uploaded file for target data source using file mapping
+                const targetFileName = fileMapping.get(targetDataSource.id);
                 
-                if (!targetFile) continue;
+                if (!targetFileName) continue;
                 
                 // Read target CSV data
-                const targetFilePath = path.join(uploadDir, targetFile);
+                const targetFilePath = path.join(uploadDir, targetFileName);
                 const targetCsvData = await readCSVFile(targetFilePath);
                 
                 // Get mapping attributes
