@@ -74,9 +74,15 @@ function CreateCrossReferenceModal({ isOpen, onClose, editingCrossReference }: C
       form.reset();
     },
     onError: (error: any) => {
+      let errorMessage = "An error occurred";
+      if (error?.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "An error occurred",
+        description: errorMessage,
         variant: "destructive",
       });
     },
@@ -97,9 +103,15 @@ function CreateCrossReferenceModal({ isOpen, onClose, editingCrossReference }: C
       form.reset();
     },
     onError: (error: any) => {
+      let errorMessage = "An error occurred";
+      if (error?.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "An error occurred",
+        description: errorMessage,
         variant: "destructive",
       });
     },
@@ -145,7 +157,7 @@ function CreateCrossReferenceModal({ isOpen, onClose, editingCrossReference }: C
               <p className="text-sm text-red-600">{form.formState.errors.dataSystemId.message}</p>
             )}
           </div>
-          
+
           <div className="space-y-2">
             <Label htmlFor="name">Name *</Label>
             <Input
@@ -158,7 +170,7 @@ function CreateCrossReferenceModal({ isOpen, onClose, editingCrossReference }: C
             )}
           </div>
 
-         
+
 
           <div className="space-y-2">
             <Label htmlFor="isActive">Status</Label>
@@ -218,9 +230,15 @@ export default function CrossReferences() {
       setDeletingCrossReference(null);
     },
     onError: (error: any) => {
+      let errorMessage = "An error occurred";
+      if (error?.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "An error occurred",
+        description: errorMessage,
         variant: "destructive",
       });
     },

@@ -73,7 +73,7 @@ export const dataSourceAttributes = pgTable("data_source_attributes", {
 
 export const crossReferences = pgTable("cross_references", {
   id: serial("id").primaryKey(),
-  name: text("name").notNull(),
+  name: text("name").notNull().unique(),
   dataSystemId: integer("data_system_id").references(() => dataSystems.id).notNull(),
   isActive: boolean("is_active").default(true).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),

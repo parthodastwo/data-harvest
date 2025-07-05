@@ -728,6 +728,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/cross-references", authenticateToken, async (req, res) => {
     try {
       const crossReferenceData = insertCrossReferenceSchema.parse(req.body);
+      
+      // Check if cross reference name already exists
+      const existingCrossReference = await storage.getCrossReferenceByName(crossReferenceData.name);
+      if (existingCrossReference) {
+        return res.status(400).json({ message: "This cross reference already exists, use a different name" });
+      }
+      
       const crossReference = await storage.createCrossReference(crossReferenceData);
       res.json(crossReference);
     } catch (error) {
@@ -743,6 +750,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const id = parseInt(req.params.id);
       const crossReferenceData = insertCrossReferenceSchema.partial().parse(req.body);
+      
+      // Check if cross reference name already exists, excluding the current cross reference
+      if (crossReferenceData.name) {
+        const existingCrossReference = await storage.getCrossReferenceByName(crossReferenceData.name);
+        if (existingCrossReference && existingCrossReference.id !== id) {
+          return res.status(400).json({ message: "This cross reference already exists, use a different name" });
+        }
+      }
+      
       const crossReference = await storage.updateCrossReference(id, crossReferenceData);
       res.json(crossReference);
     } catch (error) {

@@ -297,6 +297,11 @@ export class DatabaseStorage implements IStorage {
     return crossReference || undefined;
   }
 
+  async getCrossReferenceByName(name: string): Promise<CrossReference | undefined> {
+    const [crossReference] = await db.select().from(crossReferences).where(eq(crossReferences.name, name));
+    return crossReference || undefined;
+  }
+
   async createCrossReference(crossReference: InsertCrossReference): Promise<CrossReference> {
     const [newCrossReference] = await db
       .insert(crossReferences)
