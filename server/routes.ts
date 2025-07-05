@@ -927,6 +927,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "No master data sources found" });
       }
 
+      // Get all SRCM canonical attributes
+      const srcmCanonicalAttributes = await storage.getAllSrcmCanonical();
+      if (srcmCanonicalAttributes.length === 0) {
+        return res.status(400).json({ message: "No SRCM canonical attributes found" });
+      }
+
+      // Get all data mappings for this data system
+      const dataMappings = await storage.getDataMappingsBySystem(dataSystemId);
+
       // Get all cross references
       const crossReferences = await storage.getAllCrossReferences();
 
@@ -956,51 +965,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Get master data source attributes
         const masterAttributes = await storage.getDataSourceAttributes(masterDataSource.id);
 
-        // First, determine all column names in the correct order
-        const allColumnNames: string[] = [];
-
-        // Add master data source column names first - preserve CSV column order
-        for (const csvColumn of masterCsvColumns) {
-          const attr = masterAttributes.find(a => a.name === csvColumn);
-          if (attr) {
-            const columnName = `${masterDataSource.name}.${attr.name}`;
-            allColumnNames.push(columnName);
-          }
-        }
-
-        // Find cross references for the current data system and add reference column names
-        const relevantCrossRefs = crossReferences.filter(cr => 
-          cr.dataSystemId === dataSystemId
-        );
-
-        for (const crossRef of relevantCrossRefs) {
-          const mappings = await storage.getCrossReferenceMappings(crossRef.id);
-
-          for (const mapping of mappings) {
-            const sourceDataSource = dataSources.find(ds => ds.id === mapping.sourceDataSourceId);
-            const targetDataSource = dataSources.find(ds => ds.id === mapping.targetDataSourceId);
-
-            if (sourceDataSource && targetDataSource && sourceDataSource.id === masterDataSource.id) {
-              const targetAttributes = await storage.getDataSourceAttributes(targetDataSource.id);
-              const targetFileName = fileMapping.get(targetDataSource.id);
-
-              if (targetFileName) {
-                const targetFilePath = path.join(uploadDir, targetFileName);
-                const targetCsvResult = await readCSVFile(targetFilePath);
-                const targetCsvColumns = targetCsvResult.columns;
-
-                // Add target data source column names - preserve CSV column order
-                for (const csvColumn of targetCsvColumns) {
-                  const attr = targetAttributes.find(a => a.name === csvColumn);
-                  if (attr) {
-                    const columnName = `${targetDataSource.name}.${attr.name}`;
-                    if (!allColumnNames.includes(columnName)) {
-                      allColumnNames.push(columnName);
-                    }
-                  }
-                }
-              }
-            }
+        // Load reference data into memory for efficient lookup
+        const referenceDataCache = new Map<number, { data: any[], attributes: any[] }>();
+        
+        for (const dataSource of dataSources) {
+          if (!dataSource.activeFlag || dataSource.isMaster) continue;
+          
+          const referenceFileName = fileMapping.get(dataSource.id);
+          if (referenceFileName) {
+            const referenceFilePath = path.join(uploadDir, referenceFileName);
+            const referenceCsvResult = await readCSVFile(referenceFilePath);
+            const referenceAttributes = await storage.getDataSourceAttributes(dataSource.id);
+            
+            referenceDataCache.set(dataSource.id, {
+              data: referenceCsvResult.data,
+              attributes: referenceAttributes
+            });
           }
         }
 
@@ -1008,90 +988,74 @@ export async function registerRoutes(app: Express): Promise<Server> {
         for (const masterRow of masterCsvData) {
           const outputRow: any = {};
 
-          // Initialize all columns with empty values in the correct order
-          for (const columnName of allColumnNames) {
-            outputRow[columnName] = '';
-          }
+          // Loop through all SRCM canonical attributes
+          for (const canonicalAttr of srcmCanonicalAttributes) {
+            // Check if there's a mapping for this canonical attribute in this data system
+            const mapping = dataMappings.find(m => 
+              m.srcmCanonicalId === canonicalAttr.id && 
+              m.sourceDataSourceId && 
+              m.sourceAttributeId
+            );
 
-          // Add master data source columns - preserve CSV column order
-          for (const csvColumn of masterCsvColumns) {
-            const attr = masterAttributes.find(a => a.name === csvColumn);
-            if (attr) {
-              const columnName = `${masterDataSource.name}.${attr.name}`;
-              const rawValue = masterRow[attr.name] || '';
-              outputRow[columnName] = formatAttributeValue(rawValue, attr);
-            }
-          }
+            if (!mapping) {
+              // No mapping exists, create column with empty value
+              outputRow[canonicalAttr.name] = '';
+              console.log(`No mapping found for canonical attribute: ${canonicalAttr.name}`);
+            } else {
+              // Mapping exists, get the value from the mapped data source attribute
+              let value = '';
 
-          // Process cross references to add reference data
-          for (const crossRef of relevantCrossRefs) {
-            const mappings = await storage.getCrossReferenceMappings(crossRef.id);
-            console.log(`Processing cross reference: ${crossRef.name} with ${mappings.length} mappings`);
-
-            for (const mapping of mappings) {
-              const sourceDataSource = dataSources.find(ds => ds.id === mapping.sourceDataSourceId);
-              const targetDataSource = dataSources.find(ds => ds.id === mapping.targetDataSourceId);
-
-              if (!sourceDataSource || !targetDataSource) {
-                console.log(`Skipping mapping - source or target data source not found`);
-                continue;
-              }
-
-              console.log(`Processing mapping: ${sourceDataSource.name} -> ${targetDataSource.name}`);
-
-              // Only process if the master data source is the source
-              if (sourceDataSource.id === masterDataSource.id) {
-                const targetAttributes = await storage.getDataSourceAttributes(targetDataSource.id);
-                const targetFileName = fileMapping.get(targetDataSource.id);
-
-                if (!targetFileName) {
-                  console.log(`No uploaded file found for reference data source: ${targetDataSource.name}`);
-                  continue;
-                }
-
-                console.log(`Found target file: ${targetFileName} for ${targetDataSource.name}`);
-
-                const targetFilePath = path.join(uploadDir, targetFileName);
-                const targetCsvResult = await readCSVFile(targetFilePath);
-                const targetCsvData = targetCsvResult.data;
-                const targetCsvColumns = targetCsvResult.columns;
-
-                if (targetCsvData.length === 0) {
-                  console.log(`No data found in target file: ${targetFileName}`);
-                  continue;
-                }
-
+              // Check if the mapping points to the master data source
+              if (mapping.sourceDataSourceId === masterDataSource.id) {
                 const sourceAttr = masterAttributes.find(attr => attr.id === mapping.sourceAttributeId);
-                const targetAttr = targetAttributes.find(attr => attr.id === mapping.targetAttributeId);
-
-                if (!sourceAttr || !targetAttr) {
-                  console.log(`Source or target attribute not found for mapping`);
-                  continue;
+                if (sourceAttr && masterRow[sourceAttr.name] !== undefined) {
+                  const rawValue = masterRow[sourceAttr.name] || '';
+                  value = formatAttributeValue(rawValue, sourceAttr);
                 }
-
-                console.log(`Mapping attributes: ${sourceAttr.name} -> ${targetAttr.name}`);
-
-                const masterValue = masterRow[sourceAttr.name];
-                const matchingTargetRows = targetCsvData.filter(targetRow => 
-                  targetRow[targetAttr.name] === masterValue
-                );
-
-                console.log(`Master value: ${masterValue}, Found ${matchingTargetRows.length} matching rows`);
-
-                if (matchingTargetRows.length > 0) {
-                  const targetRow = matchingTargetRows[0];
-                  // Add target columns in CSV order
-                  for (const csvColumn of targetCsvColumns) {
-                    const attr = targetAttributes.find(a => a.name === csvColumn);
-                    if (attr) {
-                      const columnName = `${targetDataSource.name}.${attr.name}`;
-                      const rawValue = targetRow[attr.name] || '';
-                      outputRow[columnName] = formatAttributeValue(rawValue, attr);
+              } else {
+                // Check reference data sources
+                const referenceData = referenceDataCache.get(mapping.sourceDataSourceId);
+                if (referenceData) {
+                  const sourceAttr = referenceData.attributes.find(attr => attr.id === mapping.sourceAttributeId);
+                  
+                  if (sourceAttr) {
+                    // Find matching record using cross-reference mappings
+                    const relevantCrossRefs = crossReferences.filter(cr => cr.dataSystemId === dataSystemId);
+                    
+                    for (const crossRef of relevantCrossRefs) {
+                      const crossRefMappings = await storage.getCrossReferenceMappings(crossRef.id);
+                      
+                      for (const crossRefMapping of crossRefMappings) {
+                        // Check if this cross-reference links master to the reference data source
+                        if (crossRefMapping.sourceDataSourceId === masterDataSource.id && 
+                            crossRefMapping.targetDataSourceId === mapping.sourceDataSourceId) {
+                          
+                          const masterLinkAttr = masterAttributes.find(attr => attr.id === crossRefMapping.sourceAttributeId);
+                          const referenceLinkAttr = referenceData.attributes.find(attr => attr.id === crossRefMapping.targetAttributeId);
+                          
+                          if (masterLinkAttr && referenceLinkAttr) {
+                            const masterLinkValue = masterRow[masterLinkAttr.name];
+                            const matchingReferenceRow = referenceData.data.find(refRow => 
+                              refRow[referenceLinkAttr.name] === masterLinkValue
+                            );
+                            
+                            if (matchingReferenceRow && matchingReferenceRow[sourceAttr.name] !== undefined) {
+                              const rawValue = matchingReferenceRow[sourceAttr.name] || '';
+                              value = formatAttributeValue(rawValue, sourceAttr);
+                              break;
+                            }
+                          }
+                        }
+                      }
+                      
+                      if (value) break;
                     }
                   }
-                  console.log(`Added ${targetCsvColumns.length} columns from ${targetDataSource.name}`);
                 }
               }
+
+              outputRow[canonicalAttr.name] = value;
+              console.log(`Mapped canonical attribute: ${canonicalAttr.name} = ${value}`);
             }
           }
 
@@ -1103,7 +1067,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "No data extracted" });
       }
 
-      // Generate CSV output
+      // Generate CSV output with canonical attribute names as columns
       const csvOutput = await generateCSVOutput(extractedData);
 
       // Set response headers for file download
