@@ -45,23 +45,14 @@ function CreateMappingModal({ isOpen, onClose, crossReferenceId, editingMapping 
 
   // Update form values when editingMapping changes
   useEffect(() => {
-    console.log("useEffect triggered - editingMapping:", editingMapping, "isOpen:", isOpen);
-    if (editingMapping) {
-      console.log("Setting form values for editing mapping:", editingMapping);
+    if (editingMapping && isOpen) {
       form.reset({
         sourceDataSourceId: editingMapping.sourceDataSourceId,
         sourceAttributeId: editingMapping.sourceAttributeId,
         targetDataSourceId: editingMapping.targetDataSourceId,
         targetAttributeId: editingMapping.targetAttributeId,
       });
-      // Manually invalidate attribute queries to ensure they reload with the new data source IDs
-      setTimeout(() => {
-        console.log("Invalidating attribute queries for sources:", editingMapping.sourceDataSourceId, editingMapping.targetDataSourceId);
-        queryClient.invalidateQueries({ queryKey: ["/api/data-sources", editingMapping.sourceDataSourceId, "attributes"] });
-        queryClient.invalidateQueries({ queryKey: ["/api/data-sources", editingMapping.targetDataSourceId, "attributes"] });
-      }, 100);
-    } else {
-      console.log("Resetting form to default values");
+    } else if (!editingMapping && isOpen) {
       form.reset({
         sourceDataSourceId: 0,
         sourceAttributeId: 0,
@@ -69,7 +60,7 @@ function CreateMappingModal({ isOpen, onClose, crossReferenceId, editingMapping 
         targetAttributeId: 0,
       });
     }
-  }, [editingMapping, form, queryClient, isOpen]);
+  }, [editingMapping, form, isOpen]);
 
   const { data: crossReference } = useQuery<CrossReference>({
     queryKey: ["/api/cross-references", crossReferenceId],
@@ -114,13 +105,6 @@ function CreateMappingModal({ isOpen, onClose, crossReferenceId, editingMapping 
     enabled: isOpen && !!form.watch("targetDataSourceId") && form.watch("targetDataSourceId") > 0,
   });
 
-  // Force refetch target attributes when target data source changes
-  useEffect(() => {
-    const targetDataSourceId = form.watch("targetDataSourceId");
-    if (targetDataSourceId && targetDataSourceId > 0) {
-      refetchTargetAttributes();
-    }
-  }, [form.watch("targetDataSourceId"), refetchTargetAttributes]);
 
   const createMutation = useMutation({
     mutationFn: async (data: z.infer<typeof createMappingSchema>) => {
