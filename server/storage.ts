@@ -351,7 +351,7 @@ export class DatabaseStorage implements IStorage {
 
   // SRCM Canonical methods
   async getAllSrcmCanonical(): Promise<SrcmCanonical[]> {
-    return await db.select().from(srcmCanonical).orderBy(srcmCanonical.name);
+    return await db.select().from(srcmCanonical).orderBy(srcmCanonical.id);
   }
 
   async getSrcmCanonical(id: number): Promise<SrcmCanonical | undefined> {
