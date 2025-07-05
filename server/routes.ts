@@ -1153,14 +1153,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
   function parseDate(dateString: string): Date | null {
     if (!dateString) return null;
 
+    // Month abbreviation mapping
+    const monthMap: { [key: string]: number } = {
+        "JAN": 0,
+        "FEB": 1,
+        "MAR": 2,
+        "APR": 3,
+        "MAY": 4,
+        "JUN": 5,
+        "JUL": 6,
+        "AUG": 7,
+        "SEP": 8,
+        "OCT": 9,
+        "NOV": 10,
+        "DEC": 11,
+    };
+  
     // Try common date formats
     const formats = [
       /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/,  // MM/DD/YYYY or M/D/YYYY
       /^(\d{4})-(\d{2})-(\d{2})$/,        // YYYY-MM-DD
       /^(\d{2})-(\d{2})-(\d{4})$/,        // MM-DD-YYYY
       /^(\d{1,2})-(\d{1,2})-(\d{4})$/,    // M-D-YYYY
+       /^(\d{1,2})-([A-Z]{3})-(\d{4})$/    // DD-MON-YYYY
     ];
 
+
+    // Try DD-MON-YYYY format
+    const ddMonYyyy = dateString.match(/^(\d{1,2})-([A-Z]{3})-(\d{4})$/);
+    if (ddMonYyyy) {
+      const day = parseInt(ddMonYyyy[1]);
+      const monthAbbr = ddMonYyyy[2].toUpperCase();
+      const year = parseInt(ddMonYyyy[3]);
+      const month = monthMap[monthAbbr];
+      return month !== undefined ? new Date(year, month, day) : null; // Return null if month is invalid
+    }
+    
     // Try MM/DD/YYYY format
     const mmddyyyy = dateString.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
     if (mmddyyyy) {
