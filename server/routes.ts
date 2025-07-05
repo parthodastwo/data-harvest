@@ -1151,6 +1151,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Helper function to parse date from various input formats
   function parseDate(dateString: string): Date | null {
+
+   
     if (!dateString) return null;
 
     // Month abbreviation mapping
@@ -1175,12 +1177,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       /^(\d{4})-(\d{2})-(\d{2})$/,        // YYYY-MM-DD
       /^(\d{2})-(\d{2})-(\d{4})$/,        // MM-DD-YYYY
       /^(\d{1,2})-(\d{1,2})-(\d{4})$/,    // M-D-YYYY
-       /^(\d{1,2})-([A-Z]{3})-(\d{4})$/    // DD-MON-YYYY
+       /^(\d{1,2})-([A-Z,a-z]{3})-(\d{4})$/    // DD-MON-YYYY
     ];
 
 
     // Try DD-MON-YYYY format
-    const ddMonYyyy = dateString.match(/^(\d{1,2})-([A-Z]{3})-(\d{4})$/);
+    const ddMonYyyy = dateString.match(/^(\d{1,2})-([A-Z,a-z]{3})-(\d{4})$/);
     if (ddMonYyyy) {
       const day = parseInt(ddMonYyyy[1]);
       const monthAbbr = ddMonYyyy[2].toUpperCase();
