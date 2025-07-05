@@ -1,6 +1,7 @@
 import { db } from "./db";
 import { users, dataExtractions, extractionConfigurations, dataSystems, dataSources, dataSourceAttributes, crossReferences, crossReferenceMappings, srcmCanonical, dataMappings, type User, type DataExtraction, type ExtractionConfiguration, type DataSystem, type DataSource, type DataSourceAttribute, type CrossReference, type CrossReferenceMapping, type SrcmCanonical, type DataMapping, type InsertDataExtraction, type InsertExtractionConfiguration, type InsertDataSystem, type InsertDataSource, type InsertDataSourceAttribute, type InsertCrossReference, type InsertCrossReferenceMapping, type InsertSrcmCanonical, type InsertDataMapping } from "@shared/schema";
-import { eq, desc, and, alias } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
+import { eq, desc, and } from "drizzle-orm";
 
 // Create aliases for multiple joins on the same table
 const primaryDataSource = alias(dataSources, 'primaryDataSource');
