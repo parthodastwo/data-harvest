@@ -90,7 +90,7 @@ function CreateMappingModal({ isOpen, onClose, crossReferenceId, editingMapping 
     enabled: !!crossReference?.dataSystemId,
   });
 
-  const { data: sourceAttributes } = useQuery<DataSourceAttribute[]>({
+  const { data: sourceAttributes, refetch: refetchSourceAttributes } = useQuery<DataSourceAttribute[]>({
     queryKey: ["/api/data-sources", form.watch("sourceDataSourceId"), "attributes"],
     queryFn: async () => {
       const sourceId = form.watch("sourceDataSourceId");
@@ -226,17 +226,16 @@ function CreateMappingModal({ isOpen, onClose, crossReferenceId, editingMapping 
               <div className="space-y-2">
                 <Label htmlFor="sourceAttributeId">Attribute *</Label>
                 <Select
-                  value={form.watch("sourceAttributeId") > 0 ? form.watch("sourceAttributeId").toString() : ""}
+                  value={form.watch("sourceAttributeId") && form.watch("sourceAttributeId") > 0 ? form.watch("sourceAttributeId").toString() : ""}
                   onValueChange={(value) => form.setValue("sourceAttributeId", parseInt(value))}
-                  disabled={!form.watch("sourceDataSourceId")}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select source attribute" />
                   </SelectTrigger>
                   <SelectContent>
-                    {sourceAttributes?.map((attribute: DataSourceAttribute) => (
-                      <SelectItem key={attribute.id} value={attribute.id.toString()}>
-                        {attribute.name}
+                    {sourceAttributes?.map((attr: DataSourceAttribute) => (
+                      <SelectItem key={attr.id} value={attr.id.toString()}>
+                        {attr.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -279,9 +278,8 @@ function CreateMappingModal({ isOpen, onClose, crossReferenceId, editingMapping 
               <div className="space-y-2">
                 <Label htmlFor="targetAttributeId">Attribute *</Label>
                 <Select
-                  value={form.watch("targetAttributeId") > 0 ? form.watch("targetAttributeId").toString() : ""}
+                  value={form.watch("targetAttributeId") && form.watch("targetAttributeId") > 0 ? form.watch("targetAttributeId").toString() : ""}
                   onValueChange={(value) => form.setValue("targetAttributeId", parseInt(value))}
-                  disabled={!form.watch("targetDataSourceId")}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select target attribute" />
