@@ -15,10 +15,14 @@ interface DataMappingRow {
   id?: number;
   srcmCanonicalId: number;
   srcmCanonicalName: string;
-  sourceDataSourceId?: number;
-  sourceDataSourceName?: string;
-  sourceAttributeId?: number;
-  sourceAttributeName?: string;
+  primaryDataSourceId?: number;
+  primaryDataSourceName?: string;
+  primaryAttributeId?: number;
+  primaryAttributeName?: string;
+  secondaryDataSourceId?: number;
+  secondaryDataSourceName?: string;
+  secondaryAttributeId?: number;
+  secondaryAttributeName?: string;
   isEditing?: boolean;
 }
 
@@ -77,10 +81,14 @@ export default function DataMapping() {
           id: existingMapping?.id,
           srcmCanonicalId: srcm.id,
           srcmCanonicalName: srcm.name,
-          sourceDataSourceId: existingMapping?.sourceDataSourceId,
-          sourceDataSourceName: existingMapping?.sourceDataSourceName,
-          sourceAttributeId: existingMapping?.sourceAttributeId,
-          sourceAttributeName: existingMapping?.sourceAttributeName,
+          primaryDataSourceId: existingMapping?.primaryDataSourceId,
+          primaryDataSourceName: existingMapping?.primaryDataSourceName,
+          primaryAttributeId: existingMapping?.primaryAttributeId,
+          primaryAttributeName: existingMapping?.primaryAttributeName,
+          secondaryDataSourceId: existingMapping?.secondaryDataSourceId,
+          secondaryDataSourceName: existingMapping?.secondaryDataSourceName,
+          secondaryAttributeId: existingMapping?.secondaryAttributeId,
+          secondaryAttributeName: existingMapping?.secondaryAttributeName,
           isEditing: false,
         };
       });
@@ -173,8 +181,10 @@ export default function DataMapping() {
     const mappingData = {
       dataSystemId: selectedDataSystemId,
       srcmCanonicalId: row.srcmCanonicalId,
-      sourceDataSourceId: row.sourceDataSourceId || null,
-      sourceAttributeId: row.sourceAttributeId || null,
+      primaryDataSourceId: row.primaryDataSourceId || null,
+      primaryAttributeId: row.primaryAttributeId || null,
+      secondaryDataSourceId: row.secondaryDataSourceId || null,
+      secondaryAttributeId: row.secondaryAttributeId || null,
     };
 
     if (row.id) {
@@ -201,10 +211,16 @@ export default function DataMapping() {
       if (i === index) {
         const updatedRow = { ...row, [field]: value };
         
-        // If changing data source, reset attribute
-        if (field === 'sourceDataSourceId') {
-          updatedRow.sourceAttributeId = undefined;
-          updatedRow.sourceAttributeName = undefined;
+        // If changing primary data source, reset primary attribute
+        if (field === 'primaryDataSourceId') {
+          updatedRow.primaryAttributeId = undefined;
+          updatedRow.primaryAttributeName = undefined;
+        }
+        
+        // If changing secondary data source, reset secondary attribute
+        if (field === 'secondaryDataSourceId') {
+          updatedRow.secondaryAttributeId = undefined;
+          updatedRow.secondaryAttributeName = undefined;
         }
         
         return updatedRow;
@@ -221,7 +237,7 @@ export default function DataMapping() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Data Mapping</h1>
           <p className="text-muted-foreground">
-            Map SRCM canonical attributes to data source attributes
+            Map SRCM canonical attributes to primary and secondary data source attributes
           </p>
         </div>
       </div>
@@ -254,7 +270,7 @@ export default function DataMapping() {
           <CardHeader>
             <CardTitle>Data Mappings</CardTitle>
             <p className="text-sm text-muted-foreground">
-              Map SRCM canonical attributes to data source attributes for the selected system
+              Map SRCM canonical attributes to primary and secondary data source attributes for the selected system
             </p>
           </CardHeader>
           <CardContent>
@@ -263,13 +279,15 @@ export default function DataMapping() {
                 <p className="text-muted-foreground">No SRCM canonical attributes found</p>
               </div>
             ) : (
-              <div className="max-h-[40vh] overflow-auto">
+              <div className="max-h-[60vh] overflow-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
                       <TableHead>SRCM Attribute</TableHead>
-                      <TableHead>Source Data Source</TableHead>
-                      <TableHead>Source Attribute</TableHead>
+                      <TableHead>Primary Data Source</TableHead>
+                      <TableHead>Primary Attribute</TableHead>
+                      <TableHead>Secondary Data Source</TableHead>
+                      <TableHead>Secondary Attribute</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -325,15 +343,24 @@ function MappingTableRow({
   onUpdateField,
   getDataSourceAttributes,
 }: MappingTableRowProps) {
-  const [attributes, setAttributes] = useState<DataSourceAttribute[]>([]);
+  const [primaryAttributes, setPrimaryAttributes] = useState<DataSourceAttribute[]>([]);
+  const [secondaryAttributes, setSecondaryAttributes] = useState<DataSourceAttribute[]>([]);
 
   useEffect(() => {
-    if (row.sourceDataSourceId) {
-      getDataSourceAttributes(row.sourceDataSourceId).then(setAttributes);
+    if (row.primaryDataSourceId) {
+      getDataSourceAttributes(row.primaryDataSourceId).then(setPrimaryAttributes);
     } else {
-      setAttributes([]);
+      setPrimaryAttributes([]);
     }
-  }, [row.sourceDataSourceId, getDataSourceAttributes]);
+  }, [row.primaryDataSourceId, getDataSourceAttributes]);
+
+  useEffect(() => {
+    if (row.secondaryDataSourceId) {
+      getDataSourceAttributes(row.secondaryDataSourceId).then(setSecondaryAttributes);
+    } else {
+      setSecondaryAttributes([]);
+    }
+  }, [row.secondaryDataSourceId, getDataSourceAttributes]);
 
   const isEditing = editingRow === index;
 
@@ -344,11 +371,11 @@ function MappingTableRow({
       <TableCell>
         {isEditing ? (
           <Select
-            value={row.sourceDataSourceId?.toString() || "none"}
-            onValueChange={(value) => onUpdateField(index, 'sourceDataSourceId', value === "none" ? undefined : parseInt(value))}
+            value={row.primaryDataSourceId?.toString() || "none"}
+            onValueChange={(value) => onUpdateField(index, 'primaryDataSourceId', value === "none" ? undefined : parseInt(value))}
           >
             <SelectTrigger>
-              <SelectValue placeholder="Select data source" />
+              <SelectValue placeholder="Select primary data source" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="none">None</SelectItem>
@@ -360,23 +387,23 @@ function MappingTableRow({
             </SelectContent>
           </Select>
         ) : (
-          <span>{row.sourceDataSourceName || "-"}</span>
+          <span>{row.primaryDataSourceName || "-"}</span>
         )}
       </TableCell>
       
       <TableCell>
         {isEditing ? (
           <Select
-            value={row.sourceAttributeId?.toString() || "none"}
-            onValueChange={(value) => onUpdateField(index, 'sourceAttributeId', value === "none" ? undefined : parseInt(value))}
-            disabled={!row.sourceDataSourceId}
+            value={row.primaryAttributeId?.toString() || "none"}
+            onValueChange={(value) => onUpdateField(index, 'primaryAttributeId', value === "none" ? undefined : parseInt(value))}
+            disabled={!row.primaryDataSourceId}
           >
             <SelectTrigger>
-              <SelectValue placeholder="Select attribute" />
+              <SelectValue placeholder="Select primary attribute" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="none">None</SelectItem>
-              {attributes.map((attr) => (
+              {primaryAttributes.map((attr) => (
                 <SelectItem key={attr.id} value={attr.id.toString()}>
                   {attr.name}
                 </SelectItem>
@@ -384,7 +411,54 @@ function MappingTableRow({
             </SelectContent>
           </Select>
         ) : (
-          <span>{row.sourceAttributeName || "-"}</span>
+          <span>{row.primaryAttributeName || "-"}</span>
+        )}
+      </TableCell>
+      
+      <TableCell>
+        {isEditing ? (
+          <Select
+            value={row.secondaryDataSourceId?.toString() || "none"}
+            onValueChange={(value) => onUpdateField(index, 'secondaryDataSourceId', value === "none" ? undefined : parseInt(value))}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select secondary data source" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">None</SelectItem>
+              {activeDataSources.map((ds) => (
+                <SelectItem key={ds.id} value={ds.id.toString()}>
+                  {ds.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        ) : (
+          <span>{row.secondaryDataSourceName || "-"}</span>
+        )}
+      </TableCell>
+      
+      <TableCell>
+        {isEditing ? (
+          <Select
+            value={row.secondaryAttributeId?.toString() || "none"}
+            onValueChange={(value) => onUpdateField(index, 'secondaryAttributeId', value === "none" ? undefined : parseInt(value))}
+            disabled={!row.secondaryDataSourceId}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select secondary attribute" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">None</SelectItem>
+              {secondaryAttributes.map((attr) => (
+                <SelectItem key={attr.id} value={attr.id.toString()}>
+                  {attr.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        ) : (
+          <span>{row.secondaryAttributeName || "-"}</span>
         )}
       </TableCell>
       

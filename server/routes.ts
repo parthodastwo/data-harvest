@@ -1007,67 +1007,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Loop through all SRCM canonical attributes
           for (const canonicalAttr of srcmCanonicalAttributes) {
             // Check if there's a mapping for this canonical attribute in this data system
-            const mapping = dataMappings.find(m => 
-              m.srcmCanonicalId === canonicalAttr.id && 
-              m.sourceDataSourceId && 
-              m.sourceAttributeId
-            );
+            const mapping = dataMappings.find(m => m.srcmCanonicalId === canonicalAttr.id);
 
             if (!mapping) {
               // No mapping exists, create column with empty value
               outputRow[canonicalAttr.name] = '';
               console.log(`No mapping found for canonical attribute: ${canonicalAttr.name}`);
             } else {
-              // Mapping exists, get the value from the mapped data source attribute
+              // Mapping exists, try to get value from primary data source first
               let value = '';
-
-              // Check if the mapping points to the master data source
-              if (mapping.sourceDataSourceId === masterDataSource.id) {
-                const sourceAttr = masterAttributes.find(attr => attr.id === mapping.sourceAttributeId);
-                if (sourceAttr && masterRow[sourceAttr.name] !== undefined) {
-                  const rawValue = masterRow[sourceAttr.name] || '';
-                  value = formatAttributeValue(rawValue, sourceAttr);
-                }
-              } else {
-                // Check reference data sources
-                const referenceData = referenceDataCache.get(mapping.sourceDataSourceId);
-                if (referenceData) {
-                  const sourceAttr = referenceData.attributes.find(attr => attr.id === mapping.sourceAttributeId);
-                  
-                  if (sourceAttr) {
-                    // Find matching record using cross-reference mappings
-                    const relevantCrossRefs = crossReferences.filter(cr => cr.dataSystemId === dataSystemId);
-                    
-                    for (const crossRef of relevantCrossRefs) {
-                      const crossRefMappings = await storage.getCrossReferenceMappings(crossRef.id);
-                      
-                      for (const crossRefMapping of crossRefMappings) {
-                        // Check if this cross-reference links master to the reference data source
-                        if (crossRefMapping.sourceDataSourceId === masterDataSource.id && 
-                            crossRefMapping.targetDataSourceId === mapping.sourceDataSourceId) {
-                          
-                          const masterLinkAttr = masterAttributes.find(attr => attr.id === crossRefMapping.sourceAttributeId);
-                          const referenceLinkAttr = referenceData.attributes.find(attr => attr.id === crossRefMapping.targetAttributeId);
-                          
-                          if (masterLinkAttr && referenceLinkAttr) {
-                            const masterLinkValue = masterRow[masterLinkAttr.name];
-                            const matchingReferenceRow = referenceData.data.find(refRow => 
-                              refRow[referenceLinkAttr.name] === masterLinkValue
-                            );
-                            
-                            if (matchingReferenceRow && matchingReferenceRow[sourceAttr.name] !== undefined) {
-                              const rawValue = matchingReferenceRow[sourceAttr.name] || '';
-                              value = formatAttributeValue(rawValue, sourceAttr);
-                              break;
-                            }
-                          }
-                        }
-                      }
-                      
-                      if (value) break;
-                    }
-                  }
-                }
+              
+              // Try primary data source/attribute first
+              if (mapping.primaryDataSourceId && mapping.primaryAttributeId) {
+                value = await getAttributeValue(mapping.primaryDataSourceId, mapping.primaryAttributeId, masterDataSource, masterRow, masterAttributes, referenceDataCache, crossReferences, dataSystemId);
+              }
+              
+              // If primary value is empty, try secondary data source/attribute
+              if (!value && mapping.secondaryDataSourceId && mapping.secondaryAttributeId) {
+                value = await getAttributeValue(mapping.secondaryDataSourceId, mapping.secondaryAttributeId, masterDataSource, masterRow, masterAttributes, referenceDataCache, crossReferences, dataSystemId);
               }
 
               outputRow[canonicalAttr.name] = value;
@@ -1097,6 +1054,71 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Data extraction failed" });
     }
   });
+
+  // Helper function to get attribute value from data source
+  async function getAttributeValue(
+    sourceDataSourceId: number, 
+    sourceAttributeId: number, 
+    masterDataSource: any, 
+    masterRow: any, 
+    masterAttributes: any[], 
+    referenceDataCache: Map<number, { data: any[], attributes: any[] }>, 
+    crossReferences: any[], 
+    dataSystemId: number
+  ): Promise<string> {
+    let value = '';
+
+    // Check if the mapping points to the master data source
+    if (sourceDataSourceId === masterDataSource.id) {
+      const sourceAttr = masterAttributes.find(attr => attr.id === sourceAttributeId);
+      if (sourceAttr && masterRow[sourceAttr.name] !== undefined) {
+        const rawValue = masterRow[sourceAttr.name] || '';
+        value = formatAttributeValue(rawValue, sourceAttr);
+      }
+    } else {
+      // Check reference data sources
+      const referenceData = referenceDataCache.get(sourceDataSourceId);
+      if (referenceData) {
+        const sourceAttr = referenceData.attributes.find(attr => attr.id === sourceAttributeId);
+        
+        if (sourceAttr) {
+          // Find matching record using cross-reference mappings
+          const relevantCrossRefs = crossReferences.filter(cr => cr.dataSystemId === dataSystemId);
+          
+          for (const crossRef of relevantCrossRefs) {
+            const crossRefMappings = await storage.getCrossReferenceMappings(crossRef.id);
+            
+            for (const crossRefMapping of crossRefMappings) {
+              // Check if this cross-reference links master to the reference data source
+              if (crossRefMapping.sourceDataSourceId === masterDataSource.id && 
+                  crossRefMapping.targetDataSourceId === sourceDataSourceId) {
+                
+                const masterLinkAttr = masterAttributes.find(attr => attr.id === crossRefMapping.sourceAttributeId);
+                const referenceLinkAttr = referenceData.attributes.find(attr => attr.id === crossRefMapping.targetAttributeId);
+                
+                if (masterLinkAttr && referenceLinkAttr) {
+                  const masterLinkValue = masterRow[masterLinkAttr.name];
+                  const matchingReferenceRow = referenceData.data.find(refRow => 
+                    refRow[referenceLinkAttr.name] === masterLinkValue
+                  );
+                  
+                  if (matchingReferenceRow && matchingReferenceRow[sourceAttr.name] !== undefined) {
+                    const rawValue = matchingReferenceRow[sourceAttr.name] || '';
+                    value = formatAttributeValue(rawValue, sourceAttr);
+                    break;
+                  }
+                }
+              }
+            }
+            
+            if (value) break;
+          }
+        }
+      }
+    }
+
+    return value;
+  }
 
   // Helper function to format attribute values based on their format
   function formatAttributeValue(value: string, attribute: any): string {

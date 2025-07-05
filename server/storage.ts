@@ -1,6 +1,12 @@
-import { users, dataExtractions, extractionConfigurations, dataSystems, dataSources, dataSourceAttributes, crossReferences, crossReferenceMappings, srcmCanonical, dataMappings, type User, type DataExtraction, type ExtractionConfiguration, type DataSystem, type DataSource, type DataSourceAttribute, type CrossReference, type CrossReferenceMapping, type SrcmCanonical, type DataMapping, type InsertDataExtraction, type InsertExtractionConfiguration, type InsertDataSystem, type InsertDataSource, type InsertDataSourceAttribute, type InsertCrossReference, type InsertCrossReferenceMapping, type InsertSrcmCanonical, type InsertDataMapping } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, and } from "drizzle-orm";
+import { users, dataExtractions, extractionConfigurations, dataSystems, dataSources, dataSourceAttributes, crossReferences, crossReferenceMappings, srcmCanonical, dataMappings, type User, type DataExtraction, type ExtractionConfiguration, type DataSystem, type DataSource, type DataSourceAttribute, type CrossReference, type CrossReferenceMapping, type SrcmCanonical, type DataMapping, type InsertDataExtraction, type InsertExtractionConfiguration, type InsertDataSystem, type InsertDataSource, type InsertDataSourceAttribute, type InsertCrossReference, type InsertCrossReferenceMapping, type InsertSrcmCanonical, type InsertDataMapping } from "@shared/schema";
+import { eq, desc, and, alias } from "drizzle-orm";
+
+// Create aliases for multiple joins on the same table
+const primaryDataSource = alias(dataSources, 'primaryDataSource');
+const secondaryDataSource = alias(dataSources, 'secondaryDataSource');
+const primaryDataSourceAttributes = alias(dataSourceAttributes, 'primaryDataSourceAttributes');
+const secondaryDataSourceAttributes = alias(dataSourceAttributes, 'secondaryDataSourceAttributes');
 
 export interface IStorage {
   // User methods
@@ -386,17 +392,23 @@ export class DatabaseStorage implements IStorage {
         dataSystemId: dataMappings.dataSystemId,
         srcmCanonicalId: dataMappings.srcmCanonicalId,
         srcmCanonicalName: srcmCanonical.name,
-        sourceDataSourceId: dataMappings.sourceDataSourceId,
-        sourceDataSourceName: dataSources.name,
-        sourceAttributeId: dataMappings.sourceAttributeId,
-        sourceAttributeName: dataSourceAttributes.name,
+        primaryDataSourceId: dataMappings.primaryDataSourceId,
+        primaryDataSourceName: primaryDataSource.name,
+        primaryAttributeId: dataMappings.primaryAttributeId,
+        primaryAttributeName: primaryDataSourceAttributes.name,
+        secondaryDataSourceId: dataMappings.secondaryDataSourceId,
+        secondaryDataSourceName: secondaryDataSource.name,
+        secondaryAttributeId: dataMappings.secondaryAttributeId,
+        secondaryAttributeName: secondaryDataSourceAttributes.name,
         createdAt: dataMappings.createdAt,
         updatedAt: dataMappings.updatedAt,
       })
       .from(dataMappings)
       .innerJoin(srcmCanonical, eq(dataMappings.srcmCanonicalId, srcmCanonical.id))
-      .leftJoin(dataSources, eq(dataMappings.sourceDataSourceId, dataSources.id))
-      .leftJoin(dataSourceAttributes, eq(dataMappings.sourceAttributeId, dataSourceAttributes.id))
+      .leftJoin(primaryDataSource, eq(dataMappings.primaryDataSourceId, primaryDataSource.id))
+      .leftJoin(primaryDataSourceAttributes, eq(dataMappings.primaryAttributeId, primaryDataSourceAttributes.id))
+      .leftJoin(secondaryDataSource, eq(dataMappings.secondaryDataSourceId, secondaryDataSource.id))
+      .leftJoin(secondaryDataSourceAttributes, eq(dataMappings.secondaryAttributeId, secondaryDataSourceAttributes.id))
       .where(eq(dataMappings.dataSystemId, dataSystemId))
       .orderBy(srcmCanonical.name);
   }

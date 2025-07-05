@@ -105,8 +105,10 @@ export const dataMappings = pgTable("data_mappings", {
   id: serial("id").primaryKey(),
   dataSystemId: integer("data_system_id").references(() => dataSystems.id).notNull(),
   srcmCanonicalId: integer("srcm_canonical_id").references(() => srcmCanonical.id).notNull(),
-  sourceDataSourceId: integer("source_data_source_id").references(() => dataSources.id),
-  sourceAttributeId: integer("source_attribute_id").references(() => dataSourceAttributes.id),
+  primaryDataSourceId: integer("primary_data_source_id").references(() => dataSources.id),
+  primaryAttributeId: integer("primary_attribute_id").references(() => dataSourceAttributes.id),
+  secondaryDataSourceId: integer("secondary_data_source_id").references(() => dataSources.id),
+  secondaryAttributeId: integer("secondary_attribute_id").references(() => dataSourceAttributes.id),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
