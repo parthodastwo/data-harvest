@@ -50,6 +50,8 @@ export default function DataMapping() {
   const [mappingRows, setMappingRows] = useState<DataMappingRow[]>([]);
   const [editingRow, setEditingRow] = useState<number | null>(null);
 
+  const [isCardVisible, setIsCardVisible] = useState<boolean>(true);
+  
   // Get all active data systems
   const { data: dataSystems } = useQuery<DataSystem[]>({
     queryKey: ["/api/data-systems"],
@@ -204,6 +206,8 @@ export default function DataMapping() {
   const handleDataSystemChange = (value: string) => {
     setSelectedDataSystemId(parseInt(value));
     setEditingRow(null);
+
+    setIsCardVisible(false); 
   };
 
   const handleEditRow = (index: number) => {
@@ -297,6 +301,7 @@ export default function DataMapping() {
         </div>
       </div>
 
+      {isCardVisible && ( // Conditionally render card based on state
       <Card>
         &nbsp;
         <CardContent className="space-y-4">
@@ -322,6 +327,7 @@ export default function DataMapping() {
           </div>
         </CardContent>
       </Card>
+      )}
 
       {selectedDataSystemId > 0 && (
         <Card>
@@ -340,7 +346,7 @@ export default function DataMapping() {
                 </p>
               </div>
             ) : (
-              <div className="max-h-[250px] overflow-y-auto">
+              <div className="max-h-[350px] overflow-y-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
