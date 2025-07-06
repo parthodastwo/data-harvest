@@ -213,6 +213,15 @@ export default function CrossReferences() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  const { data: dataSystems = [] } = useQuery<DataSystem[]>({
+    queryKey: ["/api/data-systems"],
+  });
+  
+  const getDataSystemName = (dataSystemId: number) => {
+    const system = dataSystems.find((s) => s.id === dataSystemId);
+    return system?.name || "Unknown";
+  };
+  
   const { data: crossReferences, isLoading } = useQuery<CrossReference[]>({
     queryKey: ["/api/cross-references"],
   });
@@ -296,22 +305,20 @@ export default function CrossReferences() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Name</TableHead>
+                    <TableHead>Data System</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead>Created</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {crossReferences.map((crossReference: CrossReference) => (
                     <TableRow key={crossReference.id}>
-                      <TableCell className="font-medium">{crossReference.name}</TableCell>
+                      <TableCell className="font-medium">{crossReference.name}  </TableCell>
+                      <TableCell>{getDataSystemName(crossReference.dataSystemId)}</TableCell>
                       <TableCell>
                         <Badge variant={crossReference.isActive ? "default" : "secondary"}>
                           {crossReference.isActive ? "Active" : "Inactive"}
                         </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {new Date(crossReference.createdAt).toLocaleDateString()}
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-2">
