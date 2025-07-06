@@ -1,10 +1,12 @@
-import { Search, Bell } from "lucide-react";
+import { Search, Bell, LogOut } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 
+
 export function Header() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
+  
 
   const getUserInitials = () => {
     if (!user) return "UN";
@@ -27,6 +29,14 @@ export function Header() {
               <span className="text-white text-sm font-medium">{getUserInitials()}</span>
             </div>
           </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={logout}
+            className="p-1 text-red-600 hover:text-red-700"
+          >
+            <LogOut className="h-4 w-4" />
+          </Button>
         </div>
       </div>
     </header>

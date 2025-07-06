@@ -1,15 +1,32 @@
-
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Save, Trash2, Edit, X, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import type { DataSystem, DataSource, DataSourceAttribute, SrcmCanonical } from "@shared/schema";
+import type {
+  DataSystem,
+  DataSource,
+  DataSourceAttribute,
+  SrcmCanonical,
+} from "@shared/schema";
 
 interface DataMappingRow {
   id?: number;
@@ -48,7 +65,10 @@ export default function DataMapping() {
     queryKey: ["/api/data-systems", selectedDataSystemId, "data-sources"],
     queryFn: async () => {
       if (!selectedDataSystemId) return [];
-      const response = await apiRequest("GET", `/api/data-systems/${selectedDataSystemId}/data-sources`);
+      const response = await apiRequest(
+        "GET",
+        `/api/data-systems/${selectedDataSystemId}/data-sources`,
+      );
       return response.json();
     },
     enabled: !!selectedDataSystemId,
@@ -59,24 +79,34 @@ export default function DataMapping() {
     queryKey: ["/api/data-systems", selectedDataSystemId, "data-mappings"],
     queryFn: async () => {
       if (!selectedDataSystemId) return [];
-      const response = await apiRequest("GET", `/api/data-systems/${selectedDataSystemId}/data-mappings`);
+      const response = await apiRequest(
+        "GET",
+        `/api/data-systems/${selectedDataSystemId}/data-mappings`,
+      );
       return response.json();
     },
     enabled: !!selectedDataSystemId,
   });
 
   // Get attributes for a specific data source
-  const getDataSourceAttributes = async (dataSourceId: number): Promise<DataSourceAttribute[]> => {
+  const getDataSourceAttributes = async (
+    dataSourceId: number,
+  ): Promise<DataSourceAttribute[]> => {
     if (!dataSourceId) return [];
-    const response = await apiRequest("GET", `/api/data-sources/${dataSourceId}/attributes`);
+    const response = await apiRequest(
+      "GET",
+      `/api/data-sources/${dataSourceId}/attributes`,
+    );
     return response.json();
   };
 
   // Initialize mapping rows when data changes
   useEffect(() => {
     if (srcmCanonicals && selectedDataSystemId) {
-      const rows: DataMappingRow[] = srcmCanonicals.map(srcm => {
-        const existingMapping = existingMappings?.find(m => m.srcmCanonicalId === srcm.id);
+      const rows: DataMappingRow[] = srcmCanonicals.map((srcm) => {
+        const existingMapping = existingMappings?.find(
+          (m) => m.srcmCanonicalId === srcm.id,
+        );
         return {
           id: existingMapping?.id,
           srcmCanonicalId: srcm.id,
@@ -102,7 +132,9 @@ export default function DataMapping() {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/data-systems", selectedDataSystemId, "data-mappings"] });
+      queryClient.invalidateQueries({
+        queryKey: ["/api/data-systems", selectedDataSystemId, "data-mappings"],
+      });
       toast({
         title: "Success",
         description: "Data mapping saved successfully",
@@ -111,7 +143,8 @@ export default function DataMapping() {
     onError: (error: any) => {
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "An error occurred",
+        description:
+          error instanceof Error ? error.message : "An error occurred",
         variant: "destructive",
       });
     },
@@ -119,11 +152,17 @@ export default function DataMapping() {
 
   const updateMappingMutation = useMutation({
     mutationFn: async ({ id, data }: { id: number; data: any }) => {
-      const response = await apiRequest("PUT", `/api/data-mappings/${id}`, data);
+      const response = await apiRequest(
+        "PUT",
+        `/api/data-mappings/${id}`,
+        data,
+      );
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/data-systems", selectedDataSystemId, "data-mappings"] });
+      queryClient.invalidateQueries({
+        queryKey: ["/api/data-systems", selectedDataSystemId, "data-mappings"],
+      });
       toast({
         title: "Success",
         description: "Data mapping updated successfully",
@@ -132,7 +171,8 @@ export default function DataMapping() {
     onError: (error: any) => {
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "An error occurred",
+        description:
+          error instanceof Error ? error.message : "An error occurred",
         variant: "destructive",
       });
     },
@@ -143,7 +183,9 @@ export default function DataMapping() {
       await apiRequest("DELETE", `/api/data-mappings/${id}`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/data-systems", selectedDataSystemId, "data-mappings"] });
+      queryClient.invalidateQueries({
+        queryKey: ["/api/data-systems", selectedDataSystemId, "data-mappings"],
+      });
       toast({
         title: "Success",
         description: "Data mapping deleted successfully",
@@ -152,7 +194,8 @@ export default function DataMapping() {
     onError: (error: any) => {
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "An error occurred",
+        description:
+          error instanceof Error ? error.message : "An error occurred",
         variant: "destructive",
       });
     },
@@ -165,19 +208,25 @@ export default function DataMapping() {
 
   const handleEditRow = (index: number) => {
     setEditingRow(index);
-    setMappingRows(prev => prev.map((row, i) => ({ ...row, isEditing: i === index })));
+    setMappingRows((prev) =>
+      prev.map((row, i) => ({ ...row, isEditing: i === index })),
+    );
   };
 
   const handleCancelEdit = (index: number) => {
     setEditingRow(null);
-    setMappingRows(prev => prev.map((row, i) => ({ ...row, isEditing: false })));
+    setMappingRows((prev) =>
+      prev.map((row, i) => ({ ...row, isEditing: false })),
+    );
     // Reset to original values
-    queryClient.invalidateQueries({ queryKey: ["/api/data-systems", selectedDataSystemId, "data-mappings"] });
+    queryClient.invalidateQueries({
+      queryKey: ["/api/data-systems", selectedDataSystemId, "data-mappings"],
+    });
   };
 
   const handleSaveRow = async (index: number) => {
     const row = mappingRows[index];
-    
+
     const mappingData = {
       dataSystemId: selectedDataSystemId,
       srcmCanonicalId: row.srcmCanonicalId,
@@ -189,14 +238,17 @@ export default function DataMapping() {
 
     if (row.id) {
       // Update existing mapping
-      await updateMappingMutation.mutateAsync({ id: row.id, data: mappingData });
+      await updateMappingMutation.mutateAsync({
+        id: row.id,
+        data: mappingData,
+      });
     } else {
       // Create new mapping
       await createMappingMutation.mutateAsync(mappingData);
     }
 
     setEditingRow(null);
-    setMappingRows(prev => prev.map((r, i) => ({ ...r, isEditing: false })));
+    setMappingRows((prev) => prev.map((r, i) => ({ ...r, isEditing: false })));
   };
 
   const handleDeleteRow = async (index: number) => {
@@ -207,29 +259,31 @@ export default function DataMapping() {
   };
 
   const updateRowField = (index: number, field: string, value: any) => {
-    setMappingRows(prev => prev.map((row, i) => {
-      if (i === index) {
-        const updatedRow = { ...row, [field]: value };
-        
-        // If changing primary data source, reset primary attribute
-        if (field === 'primaryDataSourceId') {
-          updatedRow.primaryAttributeId = undefined;
-          updatedRow.primaryAttributeName = undefined;
+    setMappingRows((prev) =>
+      prev.map((row, i) => {
+        if (i === index) {
+          const updatedRow = { ...row, [field]: value };
+
+          // If changing primary data source, reset primary attribute
+          if (field === "primaryDataSourceId") {
+            updatedRow.primaryAttributeId = undefined;
+            updatedRow.primaryAttributeName = undefined;
+          }
+
+          // If changing secondary data source, reset secondary attribute
+          if (field === "secondaryDataSourceId") {
+            updatedRow.secondaryAttributeId = undefined;
+            updatedRow.secondaryAttributeName = undefined;
+          }
+
+          return updatedRow;
         }
-        
-        // If changing secondary data source, reset secondary attribute
-        if (field === 'secondaryDataSourceId') {
-          updatedRow.secondaryAttributeId = undefined;
-          updatedRow.secondaryAttributeName = undefined;
-        }
-        
-        return updatedRow;
-      }
-      return row;
-    }));
+        return row;
+      }),
+    );
   };
 
-  const activeDataSources = dataSources?.filter(ds => ds.activeFlag) || [];
+  const activeDataSources = dataSources?.filter((ds) => ds.activeFlag) || [];
 
   return (
     <div className="p-6 space-y-6">
@@ -237,28 +291,32 @@ export default function DataMapping() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Data Mapping</h1>
           <p className="text-muted-foreground">
-            Map SRCM canonical attributes to primary and secondary data source attributes
+            Map SRCM canonical attributes to primary and secondary data source
+            attributes
           </p>
         </div>
       </div>
 
       <Card>
-        <CardHeader>
-          <CardTitle>Select Data System</CardTitle>
-        </CardHeader>
+        &nbsp;
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="dataSystem">Data System *</Label>
-            <Select value={selectedDataSystemId.toString()} onValueChange={handleDataSystemChange}>
+            <Label htmlFor="dataSystem">Select Data System *</Label>
+            <Select
+              value={selectedDataSystemId.toString()}
+              onValueChange={handleDataSystemChange}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Select a data system" />
               </SelectTrigger>
               <SelectContent>
-                {dataSystems?.filter(system => system.isActive).map((system: DataSystem) => (
-                  <SelectItem key={system.id} value={system.id.toString()}>
-                    {system.name}
-                  </SelectItem>
-                ))}
+                {dataSystems
+                  ?.filter((system) => system.isActive)
+                  .map((system: DataSystem) => (
+                    <SelectItem key={system.id} value={system.id.toString()}>
+                      {system.name}
+                    </SelectItem>
+                  ))}
               </SelectContent>
             </Select>
           </div>
@@ -270,16 +328,19 @@ export default function DataMapping() {
           <CardHeader>
             <CardTitle>Data Mappings</CardTitle>
             <p className="text-sm text-muted-foreground">
-              Map SRCM canonical attributes to primary and secondary data source attributes for the selected system
+              Map SRCM canonical attributes to primary and secondary data source
+              attributes for the selected system
             </p>
           </CardHeader>
           <CardContent>
             {mappingRows.length === 0 ? (
               <div className="text-center py-8">
-                <p className="text-muted-foreground">No SRCM canonical attributes found</p>
+                <p className="text-muted-foreground">
+                  No SRCM canonical attributes found
+                </p>
               </div>
             ) : (
-              <div className="max-h-[60vh] overflow-auto">
+              <div className="max-h-[250px] overflow-y-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -328,7 +389,9 @@ interface MappingTableRowProps {
   onCancel: () => void;
   onDelete: () => void;
   onUpdateField: (index: number, field: string, value: any) => void;
-  getDataSourceAttributes: (dataSourceId: number) => Promise<DataSourceAttribute[]>;
+  getDataSourceAttributes: (
+    dataSourceId: number,
+  ) => Promise<DataSourceAttribute[]>;
 }
 
 function MappingTableRow({
@@ -343,12 +406,18 @@ function MappingTableRow({
   onUpdateField,
   getDataSourceAttributes,
 }: MappingTableRowProps) {
-  const [primaryAttributes, setPrimaryAttributes] = useState<DataSourceAttribute[]>([]);
-  const [secondaryAttributes, setSecondaryAttributes] = useState<DataSourceAttribute[]>([]);
+  const [primaryAttributes, setPrimaryAttributes] = useState<
+    DataSourceAttribute[]
+  >([]);
+  const [secondaryAttributes, setSecondaryAttributes] = useState<
+    DataSourceAttribute[]
+  >([]);
 
   useEffect(() => {
     if (row.primaryDataSourceId) {
-      getDataSourceAttributes(row.primaryDataSourceId).then(setPrimaryAttributes);
+      getDataSourceAttributes(row.primaryDataSourceId).then(
+        setPrimaryAttributes,
+      );
     } else {
       setPrimaryAttributes([]);
     }
@@ -356,7 +425,9 @@ function MappingTableRow({
 
   useEffect(() => {
     if (row.secondaryDataSourceId) {
-      getDataSourceAttributes(row.secondaryDataSourceId).then(setSecondaryAttributes);
+      getDataSourceAttributes(row.secondaryDataSourceId).then(
+        setSecondaryAttributes,
+      );
     } else {
       setSecondaryAttributes([]);
     }
@@ -367,12 +438,18 @@ function MappingTableRow({
   return (
     <TableRow>
       <TableCell className="font-medium">{row.srcmCanonicalName}</TableCell>
-      
+
       <TableCell>
         {isEditing ? (
           <Select
             value={row.primaryDataSourceId?.toString() || "none"}
-            onValueChange={(value) => onUpdateField(index, 'primaryDataSourceId', value === "none" ? undefined : parseInt(value))}
+            onValueChange={(value) =>
+              onUpdateField(
+                index,
+                "primaryDataSourceId",
+                value === "none" ? undefined : parseInt(value),
+              )
+            }
           >
             <SelectTrigger>
               <SelectValue placeholder="Select primary data source" />
@@ -390,12 +467,18 @@ function MappingTableRow({
           <span>{row.primaryDataSourceName || "-"}</span>
         )}
       </TableCell>
-      
+
       <TableCell>
         {isEditing ? (
           <Select
             value={row.primaryAttributeId?.toString() || "none"}
-            onValueChange={(value) => onUpdateField(index, 'primaryAttributeId', value === "none" ? undefined : parseInt(value))}
+            onValueChange={(value) =>
+              onUpdateField(
+                index,
+                "primaryAttributeId",
+                value === "none" ? undefined : parseInt(value),
+              )
+            }
             disabled={!row.primaryDataSourceId}
           >
             <SelectTrigger>
@@ -414,12 +497,18 @@ function MappingTableRow({
           <span>{row.primaryAttributeName || "-"}</span>
         )}
       </TableCell>
-      
+
       <TableCell>
         {isEditing ? (
           <Select
             value={row.secondaryDataSourceId?.toString() || "none"}
-            onValueChange={(value) => onUpdateField(index, 'secondaryDataSourceId', value === "none" ? undefined : parseInt(value))}
+            onValueChange={(value) =>
+              onUpdateField(
+                index,
+                "secondaryDataSourceId",
+                value === "none" ? undefined : parseInt(value),
+              )
+            }
           >
             <SelectTrigger>
               <SelectValue placeholder="Select secondary data source" />
@@ -437,12 +526,18 @@ function MappingTableRow({
           <span>{row.secondaryDataSourceName || "-"}</span>
         )}
       </TableCell>
-      
+
       <TableCell>
         {isEditing ? (
           <Select
             value={row.secondaryAttributeId?.toString() || "none"}
-            onValueChange={(value) => onUpdateField(index, 'secondaryAttributeId', value === "none" ? undefined : parseInt(value))}
+            onValueChange={(value) =>
+              onUpdateField(
+                index,
+                "secondaryAttributeId",
+                value === "none" ? undefined : parseInt(value),
+              )
+            }
             disabled={!row.secondaryDataSourceId}
           >
             <SelectTrigger>
@@ -461,7 +556,7 @@ function MappingTableRow({
           <span>{row.secondaryAttributeName || "-"}</span>
         )}
       </TableCell>
-      
+
       <TableCell className="text-right">
         <div className="flex items-center justify-end gap-2">
           {isEditing ? (
