@@ -1,4 +1,4 @@
-# Healthcare Data Extraction Platform
+# Healthcare Data Extraction Platform for SocialRCM
 
 ## Overview
 
