@@ -30,7 +30,6 @@ export function Sidebar() {
     { icon: GitBranch, label: "Cross References", path: "/cross-references" },
     { icon: Shuffle, label: "Data Mapping", path: "/data-mapping" },
     { icon: Download, label: "Data Extraction", path: "/data-extraction" },
-    { icon: Settings, label: "Configurations", path: "/configurations" },
     { icon: Users, label: "User Management", path: "/users", adminOnly: true },
   ];
 
