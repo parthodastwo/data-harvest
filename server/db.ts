@@ -24,8 +24,9 @@ if (isReplit) {
   // AWS EC2 or other traditional Node environment
   const pg = await import("pg");
   const { drizzle } = await import("drizzle-orm/node-postgres");
+  const { Pool } = pg.default;
 
-  pool = new pg.Pool({
+  pool = new Pool({
     connectionString: process.env.DATABASE_URL,
     ssl: {
       rejectUnauthorized: false, // optional depending on your DB setup

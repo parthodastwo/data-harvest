@@ -22,6 +22,13 @@
       "when": 1704677000000,
       "tag": "0002_update_data_mappings_primary_secondary",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1704677000000,
+      "tag": "0003_seed_data",
+      "breakpoints": true
     }
   ]
 }
