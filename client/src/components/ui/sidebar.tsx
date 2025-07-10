@@ -11,7 +11,6 @@ import {
   Menu,
   LogOut,
   Shuffle,
-  Filter,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
@@ -30,7 +29,6 @@ export function Sidebar() {
     { icon: Database, label: "Data Sources", path: "/data-sources" },
     { icon: GitBranch, label: "Cross References", path: "/cross-references" },
     { icon: Shuffle, label: "Data Mapping", path: "/data-mapping" },
-    { icon: Filter, label: "Filter Conditions", path: "/filter-conditions" },
     { icon: Download, label: "Data Extraction", path: "/data-extraction" },
     { icon: Users, label: "User Management", path: "/users", adminOnly: true },
   ];

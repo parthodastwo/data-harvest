@@ -113,18 +113,6 @@ export const dataMappings = pgTable("data_mappings", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-export const filterConditions = pgTable("filter_conditions", {
-  id: serial("id").primaryKey(),
-  dataSystemId: integer("data_system_id").references(() => dataSystems.id).notNull(),
-  name: text("name").notNull().unique(),
-  dataSourceId: integer("data_source_id").references(() => dataSources.id).notNull(),
-  attributeId: integer("attribute_id").references(() => dataSourceAttributes.id).notNull(),
-  operator: text("operator").notNull(),
-  value: text("value").notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
-
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
   createdAt: true,
@@ -221,12 +209,6 @@ export const insertDataMappingSchema = createInsertSchema(dataMappings).omit({
   updatedAt: true,
 });
 
-export const insertFilterConditionSchema = createInsertSchema(filterConditions).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
-
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type LoginRequest = z.infer<typeof loginSchema>;
@@ -252,5 +234,3 @@ export type InsertSrcmCanonical = z.infer<typeof insertSrcmCanonicalSchema>;
 export type SrcmCanonical = typeof srcmCanonical.$inferSelect;
 export type InsertDataMapping = z.infer<typeof insertDataMappingSchema>;
 export type DataMapping = typeof dataMappings.$inferSelect;
-export type InsertFilterCondition = z.infer<typeof insertFilterConditionSchema>;
-export type FilterCondition = typeof filterConditions.$inferSelect;

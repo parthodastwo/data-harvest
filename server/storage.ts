@@ -1,39 +1,5 @@
 import { db } from "./db";
-import { 
-  users, 
-  dataExtractions, 
-  extractionConfigurations, 
-  dataSystems, 
-  dataSources, 
-  dataSourceAttributes, 
-  crossReferences, 
-  crossReferenceMappings, 
-  srcmCanonical, 
-  dataMappings,
-  filterConditions,
-  type User, 
-  type InsertUser, 
-  type DataExtraction, 
-  type InsertDataExtraction, 
-  type ExtractionConfiguration, 
-  type InsertExtractionConfiguration, 
-  type DataSystem, 
-  type InsertDataSystem, 
-  type DataSource, 
-  type InsertDataSource, 
-  type DataSourceAttribute, 
-  type InsertDataSourceAttribute, 
-  type CrossReference, 
-  type InsertCrossReference, 
-  type CrossReferenceMapping, 
-  type InsertCrossReferenceMapping, 
-  type SrcmCanonical, 
-  type InsertSrcmCanonical, 
-  type DataMapping, 
-  type InsertDataMapping,
-  type FilterCondition,
-  type InsertFilterCondition
-} from "@shared/schema";
+import { users, dataExtractions, extractionConfigurations, dataSystems, dataSources, dataSourceAttributes, crossReferences, crossReferenceMappings, srcmCanonical, dataMappings, type User, type DataExtraction, type ExtractionConfiguration, type DataSystem, type DataSource, type DataSourceAttribute, type CrossReference, type CrossReferenceMapping, type SrcmCanonical, type DataMapping, type InsertDataExtraction, type InsertExtractionConfiguration, type InsertDataSystem, type InsertDataSource, type InsertDataSourceAttribute, type InsertCrossReference, type InsertCrossReferenceMapping, type InsertSrcmCanonical, type InsertDataMapping } from "@shared/schema";
 import { alias } from "drizzle-orm/pg-core";
 import { eq, desc, and } from "drizzle-orm";
 
@@ -117,14 +83,6 @@ export interface IStorage {
   updateDataMapping(id: number, data: Partial<InsertDataMapping>): Promise<DataMapping>;
   deleteDataMapping(id: number): Promise<void>;
   getDataMappingBySrcmAndSystem(dataSystemId: number, srcmCanonicalId: number): Promise<DataMapping | undefined>;
-
-  // Filter Conditions methods
-  getAllFilterConditions(): Promise<FilterCondition[]>;
-  getFilterCondition(id: number): Promise<FilterCondition | undefined>;
-  getFilterConditionByName(name: string): Promise<FilterCondition | undefined>;
-  createFilterCondition(data: InsertFilterCondition): Promise<FilterCondition>;
-  updateFilterCondition(id: number, data: Partial<InsertFilterCondition>): Promise<FilterCondition>;
-  deleteFilterCondition(id: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -470,36 +428,12 @@ export class DatabaseStorage implements IStorage {
     await db.delete(dataMappings).where(eq(dataMappings.id, id));
   }
 
-  // Filter Conditions methods
-  async getAllFilterConditions(): Promise<FilterCondition[]> {
-    return await db.select().from(filterConditions).orderBy(filterConditions.name);
-  }
-
-  async getFilterCondition(id: number): Promise<FilterCondition | undefined> {
-    const result = await db.select().from(filterConditions).where(eq(filterConditions.id, id));
+  async getDataMappingBySrcmAndSystem(dataSystemId: number, srcmCanonicalId: number): Promise<DataMapping | undefined> {
+    const result = await db
+      .select()
+      .from(dataMappings)
+      .where(and(eq(dataMappings.dataSystemId, dataSystemId), eq(dataMappings.srcmCanonicalId, srcmCanonicalId)));
     return result[0];
-  }
-
-  async getFilterConditionByName(name: string): Promise<FilterCondition | undefined> {
-    const result = await db.select().from(filterConditions).where(eq(filterConditions.name, name));
-    return result[0];
-  }
-
-  async createFilterCondition(data: InsertFilterCondition): Promise<FilterCondition> {
-    const result = await db.insert(filterConditions).values(data).returning();
-    return result[0];
-  }
-
-  async updateFilterCondition(id: number, data: Partial<InsertFilterCondition>): Promise<FilterCondition> {
-    const result = await db.update(filterConditions)
-      .set({ ...data, updatedAt: new Date() })
-      .where(eq(filterConditions.id, id))
-      .returning();
-    return result[0];
-  }
-
-  async deleteFilterCondition(id: number): Promise<void> {
-    await db.delete(filterConditions).where(eq(filterConditions.id, id));
   }
 }
 
