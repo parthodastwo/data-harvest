@@ -15,8 +15,9 @@ import DataSourceDetails from "@/pages/data-source-details";
 import CrossReferences from "@/pages/cross-references";
 import CrossReferenceDetails from "@/pages/cross-reference-details";
 import DataExtraction from "@/pages/data-extraction";
-import NotFound from "@/pages/not-found";
 import DataMapping from "@/pages/data-mapping";
+import FilterConditions from "@/pages/filter-conditions";
+import NotFound from "@/pages/not-found";
 import { lazy } from "react";
 
 function AuthenticatedRoute({ component: Component, ...props }: any) {
@@ -73,6 +74,9 @@ function Router() {
       </Route>
       <Route path="/data-mapping">
         {(params) => <AuthenticatedRoute component={DataMapping} {...params} />}
+      </Route>
+      <Route path="/filter-conditions">
+        {(params) => <AuthenticatedRoute component={FilterConditions} {...params} />}
       </Route>
       <Route component={NotFound} />
     </Switch>

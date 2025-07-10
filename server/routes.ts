@@ -8,7 +8,7 @@ import { stringify } from "csv-stringify";
 import { storage } from "./storage";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import { loginSchema, registerSchema, changePasswordSchema, createUserSchema, updateUserPasswordSchema, insertDataExtractionSchema, insertExtractionConfigurationSchema, insertDataSystemSchema, insertDataSourceSchema, insertDataSourceAttributeSchema, insertCrossReferenceSchema, insertCrossReferenceMappingSchema, insertSrcmCanonicalSchema, insertDataMappingSchema, type User } from "@shared/schema";
+import { loginSchema, registerSchema, changePasswordSchema, createUserSchema, updateUserPasswordSchema, insertDataExtractionSchema, insertExtractionConfigurationSchema, insertDataSystemSchema, insertDataSourceSchema, insertDataSourceAttributeSchema, insertCrossReferenceSchema, insertCrossReferenceMappingSchema, insertSrcmCanonicalSchema, insertDataMappingSchema, insertFilterConditionSchema, type User } from "@shared/schema";
 import { z } from "zod";
 
 // Extend Express Request interface to include user
@@ -1372,6 +1372,87 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ message: "Data mapping deleted successfully" });
     } catch (error) {
       console.error("Delete data mapping error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Filter Conditions routes
+  app.get("/api/filter-conditions", authenticateToken, async (req, res) => {
+    try {
+      const filterConditions = await storage.getAllFilterConditions();
+      res.json(filterConditions);
+    } catch (error) {
+      console.error("Get filter conditions error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.get("/api/filter-conditions/:id", authenticateToken, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const filterCondition = await storage.getFilterCondition(id);
+      if (!filterCondition) {
+        return res.status(404).json({ message: "Filter condition not found" });
+      }
+      res.json(filterCondition);
+    } catch (error) {
+      console.error("Get filter condition error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.post("/api/filter-conditions", authenticateToken, async (req, res) => {
+    try {
+      const filterConditionData = insertFilterConditionSchema.parse(req.body);
+      
+      // Check if filter condition name already exists
+      const existingFilterCondition = await storage.getFilterConditionByName(filterConditionData.name);
+      if (existingFilterCondition) {
+        return res.status(400).json({ message: "Filter condition with this name already exists" });
+      }
+      
+      const filterCondition = await storage.createFilterCondition(filterConditionData);
+      res.json(filterCondition);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid input", errors: error.errors });
+      }
+      console.error("Create filter condition error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.put("/api/filter-conditions/:id", authenticateToken, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const filterConditionData = insertFilterConditionSchema.partial().parse(req.body);
+      
+      // Check if filter condition name already exists, excluding the current filter condition
+      if (filterConditionData.name) {
+        const existingFilterCondition = await storage.getFilterConditionByName(filterConditionData.name);
+        if (existingFilterCondition && existingFilterCondition.id !== id) {
+          return res.status(400).json({ message: "Filter condition with this name already exists" });
+        }
+      }
+      
+      const filterCondition = await storage.updateFilterCondition(id, filterConditionData);
+      res.json(filterCondition);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid input", errors: error.errors });
+      }
+      console.error("Update filter condition error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.delete("/api/filter-conditions/:id", authenticateToken, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteFilterCondition(id);
+      res.json({ message: "Filter condition deleted successfully" });
+    } catch (error) {
+      console.error("Delete filter condition error:", error);
       res.status(500).json({ message: "Internal server error" });
     }
   });
