@@ -18,6 +18,7 @@ import DataExtraction from "@/pages/data-extraction";
 import NotFound from "@/pages/not-found";
 import DataMapping from "@/pages/data-mapping";
 import { lazy } from "react";
+import FilterConditions from "@/pages/filter-conditions";
 
 function AuthenticatedRoute({ component: Component, ...props }: any) {
   const { isAuthenticated, isLoading } = useAuth();
@@ -73,6 +74,9 @@ function Router() {
       </Route>
       <Route path="/data-mapping">
         {(params) => <AuthenticatedRoute component={DataMapping} {...params} />}
+      </Route>
+      <Route path="/filter-conditions">
+        {(params) => <AuthenticatedRoute component={FilterConditions} {...params} />}
       </Route>
       <Route component={NotFound} />
     </Switch>
