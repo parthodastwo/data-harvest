@@ -248,11 +248,15 @@ export default function FilterConditions() {
 
   // Reset dependent fields when parent selections change
   useEffect(() => {
-    setFormData(prev => ({ ...prev, dataSourceId: "", attributeId: "" }));
+    if (!editingCondition) {
+      setFormData(prev => ({ ...prev, dataSourceId: "", attributeId: "" }));
+    }
   }, [formData.dataSystemId]);
 
   useEffect(() => {
-    setFormData(prev => ({ ...prev, attributeId: "" }));
+    if (!editingCondition) {
+      setFormData(prev => ({ ...prev, attributeId: "" }));
+    }
   }, [formData.dataSourceId]);
 
   const operators = [
@@ -289,7 +293,7 @@ export default function FilterConditions() {
             </div>
           ) : filterConditions?.length === 0 ? (
             <div className="text-center py-8">
-              <p className="text-muted-foreground">No filter conditions found</p>
+              <p className="text-muted-foreground">No filter conditions found. Create your first filter condition to get started.</p>
             </div>
           ) : (
             <Table>
